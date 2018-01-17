@@ -40,7 +40,7 @@ public class GenomicsDBUtils {
      */
     public static GenomicsDBExportConfiguration.ExportConfiguration createExportConfiguration(final File reference, final String workspace,
                                                                                                final String callsetJson, final String vidmapJson,
-                                                                                               final String vcfHeader) {
+                                                                                               final String vcfHeader, final boolean doGnarlyGenotyping) {
         final GenomicsDBExportConfiguration.ExportConfiguration.Builder exportConfigurationBuilder =
                 GenomicsDBExportConfiguration.ExportConfiguration.newBuilder()
                         .setWorkspace(workspace)
@@ -52,6 +52,11 @@ public class GenomicsDBUtils {
                         .setProduceGTWithMinPLValueForSpanningDeletions(false)
                         .setSitesOnlyQuery(false)
                         .setMaxDiploidAltAllelesThatCanBeGenotyped(GenotypeLikelihoods.MAX_DIPLOID_ALT_ALLELES_THAT_CAN_BE_GENOTYPED);
+        if (doGnarlyGenotyping) {
+            exportConfigurationBuilder.setProduceGTField(true).setMaxDiploidAltAllelesThatCanBeGenotyped(6);
+        }
+
+
         final Path arrayFolder = Paths.get(workspace, GenomicsDBConstants.DEFAULT_ARRAY_NAME).toAbsolutePath();
 
         // For the multi-interval support, we create multiple arrays (directories) in a single workspace -
@@ -100,6 +105,12 @@ public class GenomicsDBUtils {
         }
 
         return exportConfigurationBuilder.build();
+    }
+
+    public static GenomicsDBExportConfiguration.ExportConfiguration createExportConfiguration(final File reference, final String workspace,
+                                                                                               final String callsetJson, final String vidmapJson,
+                                                                                               final String vcfHeader) {
+        return createExportConfiguration(reference, workspace, callsetJson, vidmapJson, vcfHeader, false);
     }
 
     /**

@@ -37,6 +37,8 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
+import static org.broadinstitute.hellbender.testutils.VariantContextTestUtils.getVariantContexts;
+
 public class GenotypeGVCFsIntegrationTest extends CommandLineProgramTest {
 
     private static final List<String> NO_EXTRA_ARGS = Collections.emptyList();

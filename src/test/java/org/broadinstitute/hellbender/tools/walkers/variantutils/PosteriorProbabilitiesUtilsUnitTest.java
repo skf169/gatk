@@ -12,6 +12,10 @@ import org.testng.annotations.Test;
 
 import java.util.*;
 
+import static org.broadinstitute.hellbender.testutils.VariantContextTestUtils.makeG;
+import static org.broadinstitute.hellbender.testutils.VariantContextTestUtils.makeGwithPLs;
+import static org.broadinstitute.hellbender.testutils.VariantContextTestUtils.makeVC;
+
 
 @SuppressWarnings("unchecked")
 public final class PosteriorProbabilitiesUtilsUnitTest extends GATKBaseTest {

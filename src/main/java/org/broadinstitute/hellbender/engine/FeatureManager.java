@@ -205,9 +205,16 @@ public final class FeatureManager implements AutoCloseable {
             // Only create a data source for Feature arguments that were actually specified
             if ( featureInput != null ) {
                 final Class<? extends Feature> featureType = getFeatureTypeForFeatureInputField(featureArgument.getKey());
-                addToFeatureSources(featureQueryLookahead, featureInput, featureType, cloudPrefetchBuffer, cloudIndexPrefetchBuffer, reference);
+                addToFeatureSources(featureQueryLookahead, featureInput, featureType, cloudPrefetchBuffer, cloudIndexPrefetchBuffer, reference, false);
             }
         }
+    }
+
+    void addToFeatureSources(final int featureQueryLookahead, final FeatureInput<? extends Feature> featureInput,
+                             final Class<? extends Feature> featureType, final int cloudPrefetchBuffer,
+                             final int cloudIndexPrefetchBuffer, final Path reference) {
+        // Create a new FeatureDataSource for this file, and add it to our query pool
+        featureSources.put(featureInput, new FeatureDataSource<>(featureInput, featureQueryLookahead, featureType, cloudPrefetchBuffer, cloudIndexPrefetchBuffer, reference, false));
     }
 
 
@@ -219,13 +226,16 @@ public final class FeatureManager implements AutoCloseable {
      * @param featureType class of features
      * @param cloudPrefetchBuffer MB size of caching/prefetching wrapper for the data, if on Google Cloud (0 to disable).
      * @param cloudIndexPrefetchBuffer MB size of caching/prefetching wrapper for the index, if on Google Cloud (0 to disable).
+     * @param doGnarlyGenotyping indicates whether the GenomicsDB export configuration should be modified for the GnarlyGenotyper
      *
      * Note: package-visible to enable access from the core walker classes
      * (but not actual tools, so it's not protected).
      */
-    void addToFeatureSources(final int featureQueryLookahead, final FeatureInput<? extends Feature> featureInput, final Class<? extends Feature> featureType, final int cloudPrefetchBuffer, final int cloudIndexPrefetchBuffer, final Path reference) {
+    void addToFeatureSources(final int featureQueryLookahead, final FeatureInput<? extends Feature> featureInput,
+                             final Class<? extends Feature> featureType, final int cloudPrefetchBuffer,
+                             final int cloudIndexPrefetchBuffer, final Path reference, final boolean doGnarlyGenotyping) {
         // Create a new FeatureDataSource for this file, and add it to our query pool
-        featureSources.put(featureInput, new FeatureDataSource<>(featureInput, featureQueryLookahead, featureType, cloudPrefetchBuffer, cloudIndexPrefetchBuffer, reference));
+        featureSources.put(featureInput, new FeatureDataSource<>(featureInput, featureQueryLookahead, featureType, cloudPrefetchBuffer, cloudIndexPrefetchBuffer, reference, doGnarlyGenotyping));
     }
 
     /**
