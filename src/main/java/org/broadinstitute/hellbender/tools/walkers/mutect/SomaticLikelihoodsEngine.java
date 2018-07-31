@@ -2,6 +2,8 @@ package org.broadinstitute.hellbender.tools.walkers.mutect;
 
 import com.google.common.annotations.VisibleForTesting;
 import htsjdk.variant.variantcontext.Allele;
+import org.apache.commons.math3.linear.Array2DRowRealMatrix;
+import org.apache.commons.math3.linear.DefaultRealMatrixChangingVisitor;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.special.Gamma;
 import org.apache.commons.math3.util.MathArrays;
@@ -9,7 +11,7 @@ import org.broadinstitute.hellbender.utils.*;
 import org.broadinstitute.hellbender.utils.genotyper.LikelihoodMatrix;
 
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.stream.IntStream;
 
 /**
  * Created by David Benjamin on 3/9/17.
@@ -105,4 +107,32 @@ public class SomaticLikelihoodsEngine {
         return MathUtils.logToLog10(logNumerator - logDenominator);
     }
 
+    // compute the likelihoods that each allele is contained at some allele fraction in the sample
+    public static PerAlleleCollection<Double> somaticLog10Odds(final LikelihoodMatrix<Allele> log10Matrix) {
+        final double log10EvidenceWithAllAlleles = log10Matrix.numberOfReads() == 0 ? 0 :
+                log10Evidence(getAsRealMatrix(log10Matrix));
+
+        final PerAlleleCollection<Double> lods = new PerAlleleCollection<>(PerAlleleCollection.Type.ALT_ONLY);
+        final int refIndex = SomaticGenotypingEngine.getRefIndex(log10Matrix);
+        IntStream.range(0, log10Matrix.numberOfAlleles()).filter(a -> a != refIndex).forEach(a -> {
+            final Allele allele = log10Matrix.getAllele(a);
+            final LikelihoodMatrix<Allele> log10MatrixWithoutThisAllele = SubsettedLikelihoodMatrix.excludingAllele(log10Matrix, allele);
+            final double log10EvidenceWithoutThisAllele = log10MatrixWithoutThisAllele.numberOfReads() == 0 ? 0 :
+                    log10Evidence(getAsRealMatrix(log10MatrixWithoutThisAllele));
+            lods.setAlt(allele, log10EvidenceWithAllAlleles - log10EvidenceWithoutThisAllele);
+        });
+        return lods;
+    }
+
+    //convert a likelihood matrix of alleles x reads into a RealMatrix
+    public static RealMatrix getAsRealMatrix(final LikelihoodMatrix<Allele> matrix) {
+        final RealMatrix result = new Array2DRowRealMatrix(matrix.numberOfAlleles(), matrix.numberOfReads());
+        result.walkInOptimizedOrder(new DefaultRealMatrixChangingVisitor() {
+            @Override
+            public double visit(int row, int column, double value) {
+                return matrix.get(row, column);
+            }
+        });
+        return result;
+    }
 }

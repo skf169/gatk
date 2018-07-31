@@ -5,8 +5,6 @@ import htsjdk.variant.variantcontext.*;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.math3.linear.Array2DRowRealMatrix;
-import org.apache.commons.math3.linear.DefaultRealMatrixChangingVisitor;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.util.FastMath;
 import org.broadinstitute.hellbender.engine.FeatureContext;
@@ -122,9 +120,9 @@ public class SomaticGenotypingEngine extends AssemblyBasedCallerGenotypingEngine
             final Optional<LikelihoodMatrix<Allele>> log10NormalMatrix =
                     getForNormal(() -> log10Likelihoods.sampleMatrix(log10Likelihoods.indexOfSample(normalSample)));
 
-            final PerAlleleCollection<Double> tumorLog10Odds = somaticLog10Odds(log10TumorMatrix);
+            final PerAlleleCollection<Double> tumorLog10Odds = SomaticLikelihoodsEngine.somaticLog10Odds(log10TumorMatrix);
             final Optional<PerAlleleCollection<Double>> normalLog10Odds = getForNormal(() -> diploidAltLog10Odds(log10NormalMatrix.get()));
-            final Optional<PerAlleleCollection<Double>> normalArtifactLog10Odds = getForNormal(() -> somaticLog10Odds(log10NormalMatrix.get()));
+            final Optional<PerAlleleCollection<Double>> normalArtifactLog10Odds = getForNormal(() -> SomaticLikelihoodsEngine.somaticLog10Odds(log10NormalMatrix.get()));
 
             final Set<Allele> forcedAlleles = getAllelesConsistentWithGivenAlleles(givenAlleles, loc, mergedVC);
 
@@ -214,23 +212,6 @@ public class SomaticGenotypingEngine extends AssemblyBasedCallerGenotypingEngine
         }
     }
 
-    // compute the likelihoods that each allele is contained at some allele fraction in the sample
-    private PerAlleleCollection<Double> somaticLog10Odds(final LikelihoodMatrix<Allele> log10Matrix) {
-        final double log10EvidenceWithAllAlleles = log10Matrix.numberOfReads() == 0 ? 0 :
-                SomaticLikelihoodsEngine.log10Evidence(getAsRealMatrix(log10Matrix));
-
-        final PerAlleleCollection<Double> lods = new PerAlleleCollection<>(PerAlleleCollection.Type.ALT_ONLY);
-        final int refIndex = getRefIndex(log10Matrix);
-        IntStream.range(0, log10Matrix.numberOfAlleles()).filter(a -> a != refIndex).forEach( a -> {
-            final Allele allele = log10Matrix.getAllele(a);
-            final LikelihoodMatrix<Allele> log10MatrixWithoutThisAllele = SubsettedLikelihoodMatrix.excludingAllele(log10Matrix, allele);
-            final double log10EvidenceWithoutThisAllele = log10MatrixWithoutThisAllele.numberOfReads() == 0 ? 0 :
-                    SomaticLikelihoodsEngine.log10Evidence(getAsRealMatrix(log10MatrixWithoutThisAllele));
-            lods.setAlt(allele, log10EvidenceWithAllAlleles - log10EvidenceWithoutThisAllele);
-        });
-        return lods;
-    }
-
     private void addGenotypes(final LikelihoodMatrix<Allele> tumorLog10Matrix,
                                         final Optional<LikelihoodMatrix<Allele>> normalLog10Matrix,
                                         final VariantContextBuilder callVcb) {
@@ -262,7 +243,7 @@ public class SomaticGenotypingEngine extends AssemblyBasedCallerGenotypingEngine
         if (log10LikelihoodMatrix.numberOfReads() == 0) {
             return new double[log10LikelihoodMatrix.numberOfAlleles()]; // zero counts for each allele
         }
-        final RealMatrix log10Likelihoods = getAsRealMatrix(log10LikelihoodMatrix);
+        final RealMatrix log10Likelihoods = SomaticLikelihoodsEngine.getAsRealMatrix(log10LikelihoodMatrix);
         return MathUtils.sumArrayFunction(0, log10Likelihoods.getColumnDimension(),
                 read -> MathUtils.normalizeFromLog10ToLinearSpace(log10Likelihoods.getColumn(read)));
     }
@@ -293,7 +274,7 @@ public class SomaticGenotypingEngine extends AssemblyBasedCallerGenotypingEngine
         return result;
     }
 
-    private int getRefIndex(LikelihoodMatrix<Allele> matrix) {
+    public static int getRefIndex(LikelihoodMatrix<Allele> matrix) {
         final OptionalInt optionalRefIndex = IntStream.range(0, matrix.numberOfAlleles()).filter(a -> matrix.getAllele(a).isReference()).findFirst();
         Utils.validateArg(optionalRefIndex.isPresent(), "No ref allele found in likelihoods");
         return optionalRefIndex.getAsInt();
@@ -335,18 +316,6 @@ public class SomaticGenotypingEngine extends AssemblyBasedCallerGenotypingEngine
 
             likelihoods.removeSampleReads(likelihoods.indexOfSample(sample), readsToDiscard, likelihoods.numberOfAlleles());
         }
-    }
-
-    //convert a likelihood matrix of alleles x reads into a RealMatrix
-    public static RealMatrix getAsRealMatrix(final LikelihoodMatrix<Allele> matrix) {
-        final RealMatrix result = new Array2DRowRealMatrix(matrix.numberOfAlleles(), matrix.numberOfReads());
-        result.walkInOptimizedOrder(new DefaultRealMatrixChangingVisitor() {
-            @Override
-            public double visit(int row, int column, double value) {
-                return matrix.get(row, column);
-            }
-        });
-        return result;
     }
 
     private <E> Optional<E> getForNormal(final Supplier<E> supplier) {
