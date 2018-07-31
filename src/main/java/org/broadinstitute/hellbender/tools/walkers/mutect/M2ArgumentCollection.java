@@ -20,7 +20,9 @@ public class M2ArgumentCollection extends AssemblyBasedCallerArgumentCollection 
     public static final String DEFAULT_AF_LONG_NAME = "af-of-alleles-not-in-resource";
     public static final String DEFAULT_AF_SHORT_NAME = "default-af";
     public static final String EMISSION_LOD_LONG_NAME = "tumor-lod-to-emit";
-    public static final String EMISSION_LOG_SHORT_NAME = "emit-lod";
+    public static final String EMISSION_LOD_SHORT_NAME = "emit-lod";
+    public static final String HAPLOTYPE_LOD_LONG_NAME = "haplotype-lod";
+    public static final String MIN_NUMBER_OF_HAPLOTYPES_LONG_NAME = "min-haplotypes";
     public static final String INITIAL_TUMOR_LOD_LONG_NAME = "initial-tumor-lod";
     public static final String INITIAL_TUMOR_LOD_SHORT_NAME = "init-lod";
     public static final String MAX_POPULATION_AF_LONG_NAME = "max-population-af";
@@ -36,6 +38,7 @@ public class M2ArgumentCollection extends AssemblyBasedCallerArgumentCollection 
 
     public static final double DEFAULT_AF_FOR_TUMOR_ONLY_CALLING = 5e-8;
     public static final double DEFAULT_AF_FOR_TUMOR_NORMAL_CALLING = 1e-6;
+    public static final int DEFAULT_MIN_HAPLOTYPE_COUNT = 2;
 
     //TODO: HACK ALERT HACK ALERT HACK ALERT
     //TODO: GATK4 does not yet have a way to tag inputs, eg -I:tumor tumor.bam -I:normal normal.bam,
@@ -99,7 +102,7 @@ public class M2ArgumentCollection extends AssemblyBasedCallerArgumentCollection 
      * Default setting of 3 is permissive and will emit some amount of negative training data that 
      * {@link FilterMutectCalls} should then filter.
      */
-    @Argument(fullName = EMISSION_LOD_LONG_NAME, shortName = EMISSION_LOG_SHORT_NAME, optional = true, doc = "LOD threshold to emit tumor variant to VCF.")
+    @Argument(fullName = EMISSION_LOD_LONG_NAME, shortName = EMISSION_LOD_SHORT_NAME, optional = true, doc = "LOD threshold to emit tumor variant to VCF.")
     public double emissionLod = 3.0;
 
     /**
@@ -107,6 +110,18 @@ public class M2ArgumentCollection extends AssemblyBasedCallerArgumentCollection 
      */
     @Argument(fullName = INITIAL_TUMOR_LOD_LONG_NAME, shortName = INITIAL_TUMOR_LOD_SHORT_NAME, optional = true, doc = "LOD threshold to consider pileup active.")
     public double initialTumorLod = 2.0;
+
+    /**
+     * LOD threshold for removing unlikely haplotypes before genotyping
+     */
+    @Argument(fullName = HAPLOTYPE_LOD_LONG_NAME, optional = true, doc = "LOD threshold for removing unlikely haplotypes before genotyping")
+    public double haplotypeLodThreshold = 0;
+
+    /**
+     * Minimum number of haplotypes to keep for genotyping regardless of LOD
+     */
+    @Argument(fullName = MIN_NUMBER_OF_HAPLOTYPES_LONG_NAME, optional = true, doc = "Minimum number of haplotypes to keep for genotyping regardless of LOD")
+    public int minHaplotypeCount = DEFAULT_MIN_HAPLOTYPE_COUNT;
 
     /**
      * In tumor-only mode, we discard variants with population allele frequencies greater than this threshold.

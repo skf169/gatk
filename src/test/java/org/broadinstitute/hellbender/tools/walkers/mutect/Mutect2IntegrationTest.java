@@ -249,7 +249,7 @@ public class Mutect2IntegrationTest extends CommandLineProgramTest {
                     "-R", b37_reference_20_21,
                     "-L", "20:10019000-10022000",
                     "-O", outputVcf.getAbsolutePath(),
-                    "-" + M2ArgumentCollection.EMISSION_LOG_SHORT_NAME, "15",
+                    "-" + M2ArgumentCollection.EMISSION_LOD_SHORT_NAME, "15",
                     "-" + M2ArgumentCollection.MAX_MNP_DISTANCE_SHORT_NAME, Integer.toString(maxMnpDistance));
             runCommandLine(args);
 
@@ -605,5 +605,27 @@ public class Mutect2IntegrationTest extends CommandLineProgramTest {
 
     private static String keyForVariant( final VariantContext variant ) {
         return String.format("%s:%d-%d %s", variant.getContig(), variant.getStart(), variant.getEnd(), variant.getAlleles());
+    }
+
+    @Test
+    public void dream4() throws Exception {
+        Utils.resetRandomGenerator();
+        final File outputVcf = createTempFile("output", ".vcf");
+
+        final File tumorBam = new File(DREAM_BAMS_DIR, "tumor.bam");
+        final String tumorName = "synthetic.challenge.set1.tumor";
+        final File normalBam = new File(DREAM_BAMS_DIR, "normal.bam");
+        final String normalName = "synthetic.challenge.set1.normal";
+
+        final String[] args = {
+                "-I", "/Volumes/cga_tcga-gsc/benchmark/data/realignments/synthetic.challenge.set4.tumor/synthetic.challenge.set4.tumor.bam",
+                "-" + M2ArgumentCollection.TUMOR_SAMPLE_SHORT_NAME, "synthetic.challenge.set4.tumour",
+                "-I", "/Volumes/cga_tcga-gsc/benchmark/data/realignments/synthetic.challenge.set4.normal/synthetic.challenge.set4.normal.bam",
+                "-" + M2ArgumentCollection.NORMAL_SAMPLE_SHORT_NAME, "synthetic.challenge.set4.normal",
+                "-R", "/Volumes/seq_references/Homo_sapiens_assembly19/v1/Homo_sapiens_assembly19.fasta",
+                "-O", outputVcf.getAbsolutePath()
+        };
+
+        runCommandLine(args);
     }
 }

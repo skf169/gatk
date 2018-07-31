@@ -274,7 +274,7 @@ public class SomaticGenotypingEngine extends AssemblyBasedCallerGenotypingEngine
         return result;
     }
 
-    public static int getRefIndex(LikelihoodMatrix<Allele> matrix) {
+    public static <A extends Allele> int getRefIndex(LikelihoodMatrix<A> matrix) {
         final OptionalInt optionalRefIndex = IntStream.range(0, matrix.numberOfAlleles()).filter(a -> matrix.getAllele(a).isReference()).findFirst();
         Utils.validateArg(optionalRefIndex.isPresent(), "No ref allele found in likelihoods");
         return optionalRefIndex.getAsInt();
