@@ -5,8 +5,11 @@ import org.broadinstitute.barclay.argparser.Advanced;
 import org.broadinstitute.barclay.argparser.Argument;
 import org.broadinstitute.hellbender.engine.FeatureInput;
 import org.broadinstitute.hellbender.tools.walkers.haplotypecaller.AssemblyBasedCallerArgumentCollection;
+import org.broadinstitute.hellbender.tools.walkers.haplotypecaller.ReferenceConfidenceMode;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 public class M2ArgumentCollection extends AssemblyBasedCallerArgumentCollection {
     private static final long serialVersionUID = 9341L;
@@ -39,7 +42,7 @@ public class M2ArgumentCollection extends AssemblyBasedCallerArgumentCollection 
     public static final String GET_AF_FROM_AD_LONG_NAME = "get-af-from-ad";
     public static final String ANNOTATE_BASED_ON_READS_LONG_NAME = "count-reads";
     public static final String MEDIAN_AUTOSOMAL_COVERAGE_LONG_NAME = "median-autosomal-coverage";
-    public static final String MITOCHONDIRA_MODE_LONG_NAME = "mitochondria-mode";
+    public static final String MITOCHONDRIA_MODE_LONG_NAME = "mitochondria-mode";
 
     public static final double DEFAULT_AF_FOR_TUMOR_ONLY_CALLING = 5e-8;
     public static final double DEFAULT_AF_FOR_TUMOR_NORMAL_CALLING = 1e-6;
@@ -48,6 +51,7 @@ public class M2ArgumentCollection extends AssemblyBasedCallerArgumentCollection 
     public static final double DEFAULT_MITO_EMISSION_LOD = 0;
     public static final double DEFAULT_INITIAL_LOD = 2.0;
     public static final double DEFAULT_MITO_INITIAL_LOD = 0;
+    public static final double DEFAULT_GVCF_LOD = Double.NEGATIVE_INFINITY;
 
     //TODO: HACK ALERT HACK ALERT HACK ALERT
     //TODO: GATK4 does not yet have a way to tag inputs, eg -I:tumor tumor.bam -I:normal normal.bam,
@@ -111,7 +115,7 @@ public class M2ArgumentCollection extends AssemblyBasedCallerArgumentCollection 
      * --tumor-sample is also not explicitly required in mitochondria mode since a single sample bam is expected as input.
      * Mitochondria mode is also required in FilterMutectCalls if used here.
      */
-    @Argument(fullName = MITOCHONDIRA_MODE_LONG_NAME, optional = true, doc="Mitochondria mode sets emission and initial LODs to 0.")
+    @Argument(fullName = MITOCHONDRIA_MODE_LONG_NAME, optional = true, doc="Mitochondria mode sets emission and initial LODs to 0.")
     public Boolean mitochondria = false;
 
     /**
@@ -124,6 +128,9 @@ public class M2ArgumentCollection extends AssemblyBasedCallerArgumentCollection 
     private double emissionLodArg = DEFAULT_EMISSION_LOD;
 
     public double getEmissionLod() {
+        if (emitReferenceConfidence != ReferenceConfidenceMode.NONE) {
+            return DEFAULT_GVCF_LOD;
+        }
         return mitochondria && emissionLodArg == DEFAULT_EMISSION_LOD ? DEFAULT_MITO_EMISSION_LOD : emissionLodArg;
     }
 
@@ -134,6 +141,9 @@ public class M2ArgumentCollection extends AssemblyBasedCallerArgumentCollection 
     private double initialLod = DEFAULT_INITIAL_LOD;
 
     public double getInitialLod() {
+        if (emitReferenceConfidence != ReferenceConfidenceMode.NONE) {
+            return DEFAULT_GVCF_LOD;
+        }
         return mitochondria && initialLod == DEFAULT_INITIAL_LOD ? DEFAULT_MITO_INITIAL_LOD : initialLod;
     }
 
@@ -209,4 +219,26 @@ public class M2ArgumentCollection extends AssemblyBasedCallerArgumentCollection 
     @Argument(fullName = MEDIAN_AUTOSOMAL_COVERAGE_LONG_NAME, doc="For mitochondrial calling only; Annotate possible polymorphic NuMT based on Poisson distribution given median autosomal coverage", optional = true)
     public double autosomalCoverage;
 
+    /**
+     * When Mutect2 is run in reference confidence mode with banding compression enabled (-ERC GVCF), homozygous-reference
+     * sites are compressed into bands of similar tumor LOD (TLOD) that are emitted as a single VCF record. See
+     * the FAQ documentation for more details about the GVCF format.
+     * <p>
+     * This argument allows you to set the TLOD bands. Mutect2 expects a list of strictly increasing TLOD values
+     * that will act as exclusive upper bounds for the TLOD bands. To pass multiple values,
+     * you provide them one by one with the argument, as in `-LODB -3.0 -LODB -2.0 -LODB -1.0`
+     * (this would set the TLOD bands to be `[-Inf, -3.0), [-3.0, -2.0), [-2.0, -1.0), [-1.0, Inf]`, for example).
+     * <p>
+     * Note that, unlike the GQ used by HaplotypeCaller GVCFs, here the reference calls with the highest confidence are the most negative.
+     */
+    @Advanced
+    @Argument(fullName = "gvcf-lod-band", shortName = "LODB", doc = "Exclusive upper bounds for reference confidence LOD bands " +
+            "(must be specified in increasing order)", optional = true)
+    public List<Double> GVCFGQBands = new ArrayList<>(70);
+
+    {
+        for (double i = -4.0; i <= 1; i = i + 0.5) {
+            GVCFGQBands.add(i);
+        }
+    }
 }

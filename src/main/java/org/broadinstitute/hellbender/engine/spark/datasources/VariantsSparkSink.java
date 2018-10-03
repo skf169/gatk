@@ -77,7 +77,7 @@ public final class VariantsSparkSink {
         static final String GQ_PARTITIONS = "hadoopbam.vcf.gvcf.gq-partitions";
         static final String DEFAULT_PLOIDY = "hadoopbam.vcf.gvcf.default-ploidy";
 
-        public static void writeGvcf(Configuration conf, List<Integer> gqPartitions, int defaultPloidy) {
+        public static void writeGvcf(Configuration conf, List<Number> gqPartitions, int defaultPloidy) {
             conf.setBoolean(GVCF, true);
             conf.set(GQ_PARTITIONS, Joiner.on(",").join(gqPartitions));
             conf.setInt(DEFAULT_PLOIDY, defaultPloidy);
@@ -150,7 +150,7 @@ public final class VariantsSparkSink {
      */
     private static VariantContextWriter getVariantContextWriter(VariantContextWriter writer, Configuration conf) {
         if (conf.getBoolean(SparkHeaderlessVCFOutputFormat.GVCF, false)) {
-            List<Integer> gqPartitions = StreamSupport.stream(
+            List<Number> gqPartitions = StreamSupport.stream(
                     Splitter.on(",").split(conf.get(SparkHeaderlessVCFOutputFormat.GQ_PARTITIONS)).spliterator(), false)
                     .map(Integer::parseInt)
                     .collect(Collectors.toList());
@@ -176,7 +176,7 @@ public final class VariantsSparkSink {
 
     public static void writeVariants(
             final JavaSparkContext ctx, final String outputFile, final JavaRDD<VariantContext> variants,
-            final VCFHeader header, final boolean writeGvcf, final List<Integer> gqPartitions, final int defaultPloidy) throws IOException {
+            final VCFHeader header, final boolean writeGvcf, final List<Number> gqPartitions, final int defaultPloidy) throws IOException {
         writeVariants(ctx, outputFile, variants, header, writeGvcf, gqPartitions, defaultPloidy, 0);
     }
 
@@ -192,7 +192,7 @@ public final class VariantsSparkSink {
      */
     public static void writeVariants(
             final JavaSparkContext ctx, final String outputFile, final JavaRDD<VariantContext> variants,
-            final VCFHeader header, final boolean writeGvcf, final List<Integer> gqPartitions, final int defaultPloidy,
+            final VCFHeader header, final boolean writeGvcf, final List<Number> gqPartitions, final int defaultPloidy,
             final int numReducers) throws IOException {
         String absoluteOutputFile = BucketUtils.makeFilePathAbsolute(outputFile);
         writeVariantsSingle(ctx, absoluteOutputFile, variants, header, writeGvcf, gqPartitions, defaultPloidy, numReducers);
@@ -200,7 +200,7 @@ public final class VariantsSparkSink {
 
     private static void writeVariantsSingle(
             final JavaSparkContext ctx, final String outputFile, final JavaRDD<VariantContext> variants,
-            final VCFHeader header, final boolean writeGvcf, final List<Integer> gqPartitions, final int defaultPloidy, final int numReducers) throws IOException {
+            final VCFHeader header, final boolean writeGvcf, final List<Number> gqPartitions, final int defaultPloidy, final int numReducers) throws IOException {
 
         final Configuration conf = ctx.hadoopConfiguration();
 

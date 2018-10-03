@@ -167,7 +167,7 @@ public class M2FiltersArgumentCollection extends AssemblyBasedCallerArgumentColl
      * LOD by depth Filter
      * Contamination Filter
      */
-    @Argument(fullName = M2ArgumentCollection.MITOCHONDIRA_MODE_LONG_NAME, optional = true, doc = "Set filters to mitochondrial defaults")
+    @Argument(fullName = M2ArgumentCollection.MITOCHONDRIA_MODE_LONG_NAME, optional = true, doc = "Set filters to mitochondrial defaults")
     public boolean mitochondria = false;
 
 }
