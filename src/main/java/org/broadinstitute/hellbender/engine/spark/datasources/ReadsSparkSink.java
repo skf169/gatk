@@ -22,7 +22,6 @@ import org.bdgenomics.adam.models.SequenceDictionary;
 import org.bdgenomics.formats.avro.AlignmentRecord;
 import org.broadinstitute.hellbender.exceptions.GATKException;
 import org.broadinstitute.hellbender.exceptions.UserException;
-import org.broadinstitute.hellbender.utils.gcs.BucketUtils;
 import org.broadinstitute.hellbender.utils.io.IOUtils;
 import org.broadinstitute.hellbender.utils.read.GATKRead;
 import org.broadinstitute.hellbender.utils.read.GATKReadToBDGAlignmentRecordConverter;
@@ -190,9 +189,9 @@ public final class ReadsSparkSink {
             samOutputFormat = SAMFormat.BAM; // default to BAM if output file is a directory
         }
 
-        String absoluteOutputFile = BucketUtils.makeFilePathAbsolute(outputFile);
+        String absoluteOutputFile = IOUtils.makeFilePathAbsolute(outputFile);
         String absoluteReferenceFile = referenceFile != null ?
-                                        BucketUtils.makeFilePathAbsolute(referenceFile) :
+                                        IOUtils.makeFilePathAbsolute(referenceFile) :
                                         referenceFile;
         setHadoopBAMConfigurationProperties(ctx, absoluteOutputFile, absoluteReferenceFile, format);
 

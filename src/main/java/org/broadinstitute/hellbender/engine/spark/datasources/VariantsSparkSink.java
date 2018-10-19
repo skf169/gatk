@@ -21,7 +21,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.broadinstitute.hellbender.exceptions.UserException;
-import org.broadinstitute.hellbender.utils.gcs.BucketUtils;
+import org.broadinstitute.hellbender.utils.io.IOUtils;
 import org.broadinstitute.hellbender.utils.variant.HomoSapiensConstants;
 import org.broadinstitute.hellbender.utils.variant.writers.GVCFWriter;
 import org.seqdoop.hadoop_bam.*;
@@ -194,7 +194,7 @@ public final class VariantsSparkSink {
             final JavaSparkContext ctx, final String outputFile, final JavaRDD<VariantContext> variants,
             final VCFHeader header, final boolean writeGvcf, final List<Integer> gqPartitions, final int defaultPloidy,
             final int numReducers) throws IOException {
-        String absoluteOutputFile = BucketUtils.makeFilePathAbsolute(outputFile);
+        String absoluteOutputFile = IOUtils.makeFilePathAbsolute(outputFile);
         writeVariantsSingle(ctx, absoluteOutputFile, variants, header, writeGvcf, gqPartitions, defaultPloidy, numReducers);
     }
 

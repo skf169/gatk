@@ -17,7 +17,7 @@ import org.broadinstitute.hellbender.tools.genomicsdb.GenomicsDBConstants;
 import org.broadinstitute.hellbender.utils.IndexUtils;
 import org.broadinstitute.hellbender.utils.SimpleInterval;
 import org.broadinstitute.hellbender.utils.Utils;
-import org.broadinstitute.hellbender.utils.gcs.BucketUtils;
+import org.broadinstitute.hellbender.utils.gcs.GoogleStorageUtils;
 import org.broadinstitute.hellbender.utils.io.IOUtils;
 import org.broadinstitute.hellbender.utils.nio.SeekableByteChannelPrefetcher;
 import static org.broadinstitute.hellbender.tools.genomicsdb.GenomicsDBUtils.*;
@@ -339,7 +339,7 @@ public final class FeatureDataSource<T extends Feature> implements GATKDataSourc
             final boolean requireIndex = false;
 
             // Only apply the wrappers if the feature input is on Google Cloud Storage
-            if (BucketUtils.isCloudStorageUrl(absolutePath)) {
+            if (GoogleStorageUtils.isCloudStorageUrl(absolutePath)) {
                 return AbstractFeatureReader.getFeatureReader(absolutePath, null, codec, requireIndex, cloudWrapper, cloudIndexWrapper);
             } else {
                 return AbstractFeatureReader.getFeatureReader(absolutePath, null, codec, requireIndex, Function.identity(), Function.identity());

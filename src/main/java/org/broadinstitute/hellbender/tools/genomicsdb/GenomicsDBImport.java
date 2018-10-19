@@ -7,7 +7,6 @@ import com.intel.genomicsdb.importer.model.ChromosomeInterval;
 import com.intel.genomicsdb.model.Coordinates;
 import com.intel.genomicsdb.model.GenomicsDBCallsetsMapProto;
 import com.intel.genomicsdb.model.GenomicsDBImportConfiguration;
-import com.intel.genomicsdb.GenomicsDBUtils;
 import com.intel.genomicsdb.model.ImportConfig;
 import com.intel.genomicsdb.model.BatchCompletionCallbackFunctionArgument;
 import htsjdk.samtools.SAMSequenceDictionary;
@@ -16,7 +15,6 @@ import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.CloseableTribbleIterator;
 import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.TribbleException;
-import htsjdk.tribble.readers.LineIterator;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFHeader;
@@ -34,7 +32,6 @@ import org.broadinstitute.hellbender.exceptions.GATKException;
 import org.broadinstitute.hellbender.exceptions.UserException;
 import org.broadinstitute.hellbender.utils.SimpleInterval;
 import org.broadinstitute.hellbender.utils.Utils;
-import org.broadinstitute.hellbender.utils.gcs.BucketUtils;
 import org.broadinstitute.hellbender.utils.io.IOUtils;
 import org.broadinstitute.hellbender.utils.nio.SeekableByteChannelPrefetcher;
 import org.broadinstitute.hellbender.utils.variant.GATKVariantContextUtils;
@@ -476,7 +473,7 @@ public final class GenomicsDBImport extends GATKTool {
      */
     @Override
     public void onTraversalStart() {
-        String workspaceDir = BucketUtils.makeFilePathAbsolute(overwriteOrCreateWorkspace());
+        String workspaceDir = IOUtils.makeFilePathAbsolute(overwriteOrCreateWorkspace());
         vidMapJSONFile = IOUtils.appendPathToDir(workspaceDir, GenomicsDBConstants.DEFAULT_VIDMAP_FILE_NAME);
         callsetMapJSONFile = IOUtils.appendPathToDir(workspaceDir, GenomicsDBConstants.DEFAULT_CALLSETMAP_FILE_NAME);
         vcfHeaderFile = IOUtils.appendPathToDir(workspaceDir, GenomicsDBConstants.DEFAULT_VCFHEADER_FILE_NAME);
@@ -712,7 +709,7 @@ public final class GenomicsDBImport extends GATKTool {
      * @return  The workspace directory
      */
     private String overwriteOrCreateWorkspace() {
-        String workspaceDir = BucketUtils.makeFilePathAbsolute(workspace);
+        String workspaceDir = IOUtils.makeFilePathAbsolute(workspace);
         // From JavaDoc for GenomicsDBUtils.createTileDBWorkspace
         //   returnCode = 0 : OK. If overwriteExistingWorkspace is true and the workspace exists, it is deleted first.
         //   returnCode = -1 : path was not a directory
