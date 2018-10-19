@@ -4,7 +4,7 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
 import org.apache.spark.broadcast.Broadcast;
 import org.broadinstitute.hellbender.engine.*;
-import org.broadinstitute.hellbender.utils.gcs.BucketUtils;
+import org.broadinstitute.hellbender.utils.io.IOUtils;
 import org.broadinstitute.hellbender.utils.read.GATKRead;
 import org.broadinstitute.hellbender.utils.read.ReadUtils;
 import org.broadinstitute.hellbender.utils.recalibration.*;
@@ -56,7 +56,7 @@ public final class BaseRecalibratorEngineSparkWrapper implements Serializable {
 
     // saves to output
     public static void saveTextualReport(String output, SAMFileHeader header, RecalibrationTables rt, RecalibrationArgumentCollection recalArgs) throws IOException {
-        OutputStream oStream = BucketUtils.createFile(output);
+        OutputStream oStream = IOUtils.openOutputStream(IOUtils.getPath(output));
         QuantizationInfo qi = new QuantizationInfo(rt, recalArgs.QUANTIZING_LEVELS);
         if (recalArgs.FORCE_PLATFORM != null) {
             recalArgs.DEFAULT_PLATFORM = recalArgs.FORCE_PLATFORM;
