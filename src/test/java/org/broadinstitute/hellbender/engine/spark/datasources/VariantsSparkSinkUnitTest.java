@@ -1,6 +1,6 @@
 package org.broadinstitute.hellbender.engine.spark.datasources;
 
-import com.google.common.io.Files;
+
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.seekablestream.SeekablePathStream;
@@ -10,7 +10,10 @@ import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.GenotypeBuilder;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
-import htsjdk.variant.vcf.*;
+import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderLine;
+import htsjdk.variant.vcf.VCFStandardHeaderLines;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -18,15 +21,15 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.broadinstitute.hellbender.CommandLineProgramTest;
+import org.broadinstitute.hellbender.GATKBaseTest;
 import org.broadinstitute.hellbender.engine.spark.SparkContextFactory;
 import org.broadinstitute.hellbender.exceptions.UserException;
-import org.broadinstitute.hellbender.tools.IndexFeatureFile;
-import org.broadinstitute.hellbender.utils.Utils;
-import org.broadinstitute.hellbender.utils.gcs.BucketUtils;
-import org.broadinstitute.hellbender.utils.io.IOUtils;
-import org.broadinstitute.hellbender.GATKBaseTest;
+import org.broadinstitute.hellbender.testutils.BaseTest;
 import org.broadinstitute.hellbender.testutils.MiniClusterUtils;
 import org.broadinstitute.hellbender.testutils.VariantContextTestUtils;
+import org.broadinstitute.hellbender.tools.IndexFeatureFile;
+import org.broadinstitute.hellbender.utils.gcs.BucketUtils;
+import org.broadinstitute.hellbender.utils.io.IOUtils;
 import org.seqdoop.hadoop_bam.VCFFormat;
 import org.seqdoop.hadoop_bam.util.VCFHeaderReader;
 import org.testng.Assert;
@@ -35,8 +38,12 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Files;
 import java.util.*;
 
 public final class VariantsSparkSinkUnitTest extends GATKBaseTest {
@@ -199,9 +206,8 @@ public final class VariantsSparkSinkUnitTest extends GATKBaseTest {
         File actualVcf;
         // work around TribbleIndexedFeatureReader not reading header from .bgz files
         if (vcf.endsWith(".bgz")) {
-            actualVcf = File.createTempFile(vcf, ".gz");
-            actualVcf.deleteOnExit();
-            Files.copy(new File(vcf), actualVcf);
+            actualVcf = BaseTest.createTempFile(vcf, ".gz");
+            Files.copy(IOUtils.getPath(vcf), actualVcf.toPath());
         } else {
             actualVcf = new File(vcf);
         }
@@ -218,16 +224,16 @@ public final class VariantsSparkSinkUnitTest extends GATKBaseTest {
         boolean blockCompressed = isBlockCompressed(outputFile);
         VCFFormat vcfFormat = getVcfFormat(outputFile);
         if (outputFile.endsWith(".vcf")) {
-            Assert.assertTrue(vcfFormat == VCFFormat.VCF);
+            Assert.assertSame(vcfFormat, VCFFormat.VCF);
             Assert.assertFalse(blockCompressed);
         } else if (outputFile.endsWith(".vcf.gz") || outputFile.endsWith(".vcf.bgz")) {
-            Assert.assertTrue(vcfFormat == VCFFormat.VCF);
+            Assert.assertSame(vcfFormat, VCFFormat.VCF);
             Assert.assertTrue(blockCompressed);
         } else if (outputFile.endsWith(".bcf")) {
-            Assert.assertTrue(vcfFormat == VCFFormat.BCF);
+            Assert.assertSame(vcfFormat, VCFFormat.BCF);
             Assert.assertFalse(blockCompressed);
         } else if (outputFile.endsWith(".bcf.gz")) {
-            Assert.assertTrue(vcfFormat == VCFFormat.BCF);
+            Assert.assertSame(vcfFormat, VCFFormat.BCF);
             Assert.assertTrue(blockCompressed);
         }
     }
@@ -245,20 +251,7 @@ public final class VariantsSparkSinkUnitTest extends GATKBaseTest {
         }
     }
 
-    // Like BucketUtils.openFile, but doesn't unzip
     private static InputStream openFile(String path) throws IOException {
-        Utils.nonNull(path);
-        InputStream inputStream;
-        if (BucketUtils.isCloudStorageUrl(path)) {
-            java.nio.file.Path p = BucketUtils.getPathOnGcs(path);
-            inputStream = java.nio.file.Files.newInputStream(p);
-        } else if (BucketUtils.isHadoopUrl(path)) {
-            Path file = new org.apache.hadoop.fs.Path(path);
-            FileSystem fs = file.getFileSystem(new Configuration());
-            inputStream = fs.open(file);
-        } else {
-            inputStream = new FileInputStream(path);
-        }
-        return inputStream;
+        return Files.newInputStream(IOUtils.getPath(path));
     }
 }
