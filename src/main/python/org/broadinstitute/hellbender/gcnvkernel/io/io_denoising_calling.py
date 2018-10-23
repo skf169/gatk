@@ -151,6 +151,12 @@ class SampleDenoisingAndCallingPosteriorsWriter:
         approx_var_set, approx_mu_map, approx_std_map = io_commons.extract_meanfield_posterior_parameters(
             self.denoising_model_approx)
 
+        # compute approximate denoised read counts
+        denoising_counts_approx_trace = self.denoising_model_approx.sample(draws=1000)['denoised_counts']
+        denoised_read_counts_mean = np.transpose(np.mean(denoising_counts_approx_trace, axis=0))
+        denoised_read_counts_std = np.transpose(np.std(denoising_counts_approx_trace, axis=0))
+        del denoising_counts_approx_trace
+
         for si, sample_name in enumerate(self.denoising_calling_workspace.sample_names):
             sample_name_comment_line = [io_consts.sample_name_sam_header_prefix + sample_name]
             sample_posterior_path = get_sample_posterior_path(self.output_path, si)
@@ -189,6 +195,26 @@ class SampleDenoisingAndCallingPosteriorsWriter:
                 extra_comment_lines=sample_name_comment_line,
                 header=io_consts.baseline_copy_number_column_name,
                 write_shape_info=False)
+
+            # write denoised copy number means
+            denoised_read_counts_mu_s = denoised_read_counts_mean[:, si]
+            io_commons.write_ndarray_to_tsv(
+                os.path.join(sample_posterior_path, io_consts.default_denoised_copy_number_mean_tsv_filename),
+                denoised_read_counts_mu_s,
+                extra_comment_lines=sample_name_comment_line,
+                header=io_consts.denoised_copy_number_mean_column_name,
+                write_shape_info=False
+            )
+
+            # write denoised copy numbers standard deviations
+            denoised_read_counts_std_s = denoised_read_counts_std[:, si]
+            io_commons.write_ndarray_to_tsv(
+                os.path.join(sample_posterior_path, io_consts.default_denoised_copy_number_std_tsv_filename),
+                denoised_read_counts_std_s,
+                extra_comment_lines=sample_name_comment_line,
+                header=io_consts.denoised_copy_number_std_column_name,
+                write_shape_info=False
+            )
 
 
 class SampleDenoisingAndCallingPosteriorsReader:
