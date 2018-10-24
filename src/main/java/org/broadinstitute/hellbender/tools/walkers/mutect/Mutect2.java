@@ -200,7 +200,7 @@ public final class Mutect2 extends AssemblyRegionWalker {
             MTAC.tumorSample = samples.iterator().next();
         }
         VariantAnnotatorEngine annotatorEngine = new VariantAnnotatorEngine(makeVariantAnnotations(), null, Collections.emptyList(), false);
-        m2Engine = new Mutect2Engine(MTAC, createOutputBamIndex, createOutputBamMD5, getHeaderForReads(), referenceArguments.getReferenceFileName(), annotatorEngine);
+        m2Engine = new Mutect2Engine(MTAC, createOutputBamIndex, createOutputBamMD5, getHeaderForReads(), referenceArguments.getReferencePath(), annotatorEngine);
         vcfWriter = createVCFWriter(outputVCF);
         m2Engine.writeHeader(vcfWriter, getDefaultToolVCFHeaderLines());
     }
