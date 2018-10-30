@@ -1699,7 +1699,7 @@ public final class GATKVariantContextUtilsUnitTest extends GATKBaseTest {
         final File tmpDir = createTempDir("createVCFTest");
         final File outFile = new File(tmpDir.getAbsolutePath(), "createVCFTest" + ".vcf");
 
-        final VariantContextWriter vcw = GATKVariantContextUtils.createVCFWriter(outFile, null, false);
+        final VariantContextWriter vcw = GATKVariantContextUtils.createVCFWriter(outFile.toPath(), null, false);
         vcw.close();
 
         final File outFileIndex = new File(outFile.getAbsolutePath() + ".idx");
@@ -1746,7 +1746,7 @@ public final class GATKVariantContextUtilsUnitTest extends GATKBaseTest {
                 new Options[] {Options.INDEX_ON_THE_FLY} :
                 new Options[] {};
         try (final VariantContextWriter writer = GATKVariantContextUtils.createVCFWriter(
-                outputFile,
+                outputFile.toPath(),
                 makeSimpleSequenceDictionary(),
                 createMD5,
                 options)) {
@@ -1809,7 +1809,7 @@ public final class GATKVariantContextUtilsUnitTest extends GATKBaseTest {
                 new Options[] {Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY} :
                 new Options[] {Options.ALLOW_MISSING_FIELDS_IN_HEADER};
         try (final VariantContextWriter vcw = GATKVariantContextUtils.createVCFWriter(
-                outputFile,
+                outputFile.toPath(),
                 makeSimpleSequenceDictionary(),
                 createMD5,
                 options)) {
@@ -1839,7 +1839,7 @@ public final class GATKVariantContextUtilsUnitTest extends GATKBaseTest {
                 new Options[] {Options.INDEX_ON_THE_FLY} :
                 new Options[] {};
         try (final VariantContextWriter vcw = GATKVariantContextUtils.createVCFWriter(
-                outputFile,
+                outputFile.toPath(),
                 makeSimpleSequenceDictionary(),
                 createMD5,
                 options)) {
@@ -1854,7 +1854,7 @@ public final class GATKVariantContextUtilsUnitTest extends GATKBaseTest {
         final File outFile = createTempFile("testVCFWriter", ".vcf");
         final VariantContextWriter vcw =
                      GATKVariantContextUtils.createVCFWriter(
-                             outFile,
+                             outFile.toPath(),
                              null,
                              true,
                              Options.INDEX_ON_THE_FLY);
@@ -1872,7 +1872,7 @@ public final class GATKVariantContextUtilsUnitTest extends GATKBaseTest {
 
         long recordCount = 0;
         try (final VariantContextWriter vcfWriter = GATKVariantContextUtils.createVCFWriter(
-                 outputGZIPFile,
+                 outputGZIPFile.toPath(),
                  null,
                  false,
                  Options.INDEX_ON_THE_FLY);

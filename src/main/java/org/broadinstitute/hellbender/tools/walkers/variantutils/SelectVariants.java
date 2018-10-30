@@ -19,6 +19,7 @@ import org.broadinstitute.barclay.argparser.Hidden;
 import org.broadinstitute.barclay.help.DocumentedFeature;
 import org.broadinstitute.hellbender.cmdline.StandardArgumentDefinitions;
 import org.broadinstitute.hellbender.engine.filters.*;
+import org.broadinstitute.hellbender.utils.io.IOUtils;
 import picard.cmdline.programgroups.VariantManipulationProgramGroup;
 import org.broadinstitute.hellbender.engine.FeatureInput;
 import org.broadinstitute.hellbender.engine.FeatureContext;
@@ -39,7 +40,6 @@ import org.broadinstitute.hellbender.utils.variant.*;
 import java.io.File;
 import java.util.*;
 import java.util.function.Predicate;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -135,8 +135,8 @@ public final class SelectVariants extends VariantWalker {
 
     @Argument(fullName = StandardArgumentDefinitions.OUTPUT_LONG_NAME,
               shortName = StandardArgumentDefinitions.OUTPUT_SHORT_NAME,
-              doc="File to which variants should be written")
-    public File outFile = null;
+              doc="Path to which variants should be written")
+    public String outPathName = null;
 
     /**
      * This argument can be specified multiple times in order to provide multiple sample names, or to specify
@@ -524,7 +524,8 @@ public final class SelectVariants extends VariantWalker {
             }
         }
 
-        vcfWriter = createVCFWriter(outFile);
+        Path outPath = IOUtils.getPath(outPathName);
+        vcfWriter = createVCFWriter(outPath);
         vcfWriter.writeHeader(new VCFHeader(actualLines, samples));
     }
 

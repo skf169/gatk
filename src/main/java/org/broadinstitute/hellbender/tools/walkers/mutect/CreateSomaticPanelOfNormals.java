@@ -11,12 +11,14 @@ import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFUtils;
+import java.nio.file.Path;
 import org.broadinstitute.barclay.argparser.Argument;
 import org.broadinstitute.barclay.argparser.BetaFeature;
 import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 import org.broadinstitute.barclay.help.DocumentedFeature;
 import org.broadinstitute.hellbender.cmdline.CommandLineProgram;
 import org.broadinstitute.hellbender.cmdline.StandardArgumentDefinitions;
+import org.broadinstitute.hellbender.utils.io.IOUtils;
 import picard.cmdline.programgroups.VariantFilteringProgramGroup;
 import org.broadinstitute.hellbender.exceptions.UserException;
 import org.broadinstitute.hellbender.tools.walkers.haplotypecaller.AssemblyBasedCallerUtils;
@@ -134,7 +136,7 @@ public class CreateSomaticPanelOfNormals extends CommandLineProgram {
     @Argument(fullName = StandardArgumentDefinitions.OUTPUT_LONG_NAME,
             shortName = StandardArgumentDefinitions.OUTPUT_SHORT_NAME,
             doc="Output vcf", optional = false)
-    private File outputVcf = null;
+    private String outputVcfName = null;
 
     public Object doWork() {
         final List<File> inputVcfs = new ArrayList<>(vcfs);
@@ -166,6 +168,7 @@ public class CreateSomaticPanelOfNormals extends CommandLineProgram {
             }
         }
 
+        final Path outputVcf = IOUtils.getPath(outputVcfName);
         final VariantContextWriter writer = GATKVariantContextUtils.createVCFWriter(outputVcf, sequenceDictionary, false, Options.INDEX_ON_THE_FLY);
         writer.writeHeader(new VCFHeader(VCFUtils.smartMergeHeaders(headers, false)));
 
