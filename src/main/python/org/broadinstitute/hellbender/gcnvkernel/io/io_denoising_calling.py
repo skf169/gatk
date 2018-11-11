@@ -152,7 +152,7 @@ class SampleDenoisingAndCallingPosteriorsWriter:
             self.denoising_model_approx)
 
         # compute approximate denoised read counts
-        denoising_counts_approx_trace = self.denoising_model_approx.sample(draws=1000)['denoised_counts']
+        denoising_counts_approx_trace = self.denoising_model_approx.sample(draws=500)['denoised_counts']
         denoised_read_counts_mean = np.transpose(np.mean(denoising_counts_approx_trace, axis=0))
         denoised_read_counts_std = np.transpose(np.std(denoising_counts_approx_trace, axis=0))
         del denoising_counts_approx_trace
