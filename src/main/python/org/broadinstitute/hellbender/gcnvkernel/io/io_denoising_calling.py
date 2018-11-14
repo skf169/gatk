@@ -12,6 +12,7 @@ from . import io_intervals_and_counts
 from .. import config
 from ..models.model_denoising_calling import CopyNumberCallingConfig, DenoisingModelConfig
 from ..models.model_denoising_calling import DenoisingCallingWorkspace, DenoisingModel
+from ..utils import math
 
 _logger = logging.getLogger(__name__)
 
@@ -152,10 +153,10 @@ class SampleDenoisingAndCallingPosteriorsWriter:
             self.denoising_model_approx)
 
         # compute approximate denoised read counts
-        denoising_counts_approx_trace = self.denoising_model_approx.sample(draws=500)['denoised_counts']
-        denoised_read_counts_mean = np.transpose(np.mean(denoising_counts_approx_trace, axis=0))
-        denoised_read_counts_std = np.transpose(np.std(denoising_counts_approx_trace, axis=0))
-        del denoising_counts_approx_trace
+        approx_generator = self.denoising_model_approx.iter_sample(draws=1000)
+        denoising_counts_approx_generator = (x['denoised_counts'] for x in approx_generator)
+        denoised_read_counts_mean, denoised_read_counts_std =\
+            math.calculate_mean_and_variance_online(denoising_counts_approx_generator)
 
         for si, sample_name in enumerate(self.denoising_calling_workspace.sample_names):
             sample_name_comment_line = [io_consts.sample_name_sam_header_prefix + sample_name]
