@@ -1,6 +1,7 @@
 import sys
 
 import numpy as np
+from typing import Generator, Tuple
 
 # 10 / ln(10)
 INV_LN_10_TIMES_10 = 4.342944819032518
@@ -106,7 +107,7 @@ def logsumexp_double_complement(a: np.ndarray, rel_tol: float = 1e-3) -> float:
         return x
 
 
-def calculate_mean_and_variance_online(values_generator: generator):
+def calculate_mean_and_variance_online(values_generator: Generator) -> Tuple[float, float]:
     """
     Implements Welford’s method for computing variance online using samples from a generator
 
