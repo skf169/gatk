@@ -153,10 +153,12 @@ class SampleDenoisingAndCallingPosteriorsWriter:
             self.denoising_model_approx)
 
         # compute approximate denoised read counts
-        approx_generator = self.denoising_model_approx.iter_sample(draws=1000)
-        denoising_counts_approx_generator = (x['denoised_counts'] for x in approx_generator)
-        denoised_read_counts_mean, denoised_read_counts_std =\
+        denoising_counts_approx_generator = \
+            (self.denoising_model_approx.sample()['denoised_counts'] for i in range(250))
+        denoised_read_counts_mean, denoised_read_counts_variance =\
             math.calculate_mean_and_variance_online(denoising_counts_approx_generator)
+        denoised_read_counts_mean = np.transpose(denoised_read_counts_mean)
+        denoised_read_counts_std = np.transpose(np.sqrt(denoised_read_counts_variance))
 
         for si, sample_name in enumerate(self.denoising_calling_workspace.sample_names):
             sample_name_comment_line = [io_consts.sample_name_sam_header_prefix + sample_name]

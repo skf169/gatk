@@ -114,7 +114,7 @@ def calculate_mean_and_variance_online(values_generator: Generator) -> Tuple[flo
     Note: it's assumed that the generator eventually runs out of samples and throws StopIteration exception
 
     Args:
-        a generator of values
+        values_generator: a generator of values
 
     Returns:
          (mean, variance) tuple
