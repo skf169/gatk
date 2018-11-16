@@ -18,7 +18,9 @@ import org.broadinstitute.hellbender.cmdline.argumentcollections.OpticalDuplicat
 import org.broadinstitute.hellbender.engine.filters.ReadFilter;
 import org.broadinstitute.hellbender.engine.filters.ReadFilterLibrary;
 import org.broadinstitute.hellbender.engine.spark.GATKSparkTool;
+import org.broadinstitute.hellbender.engine.spark.datasources.ReadsSparkSource;
 import org.broadinstitute.hellbender.exceptions.GATKException;
+import org.broadinstitute.hellbender.exceptions.UserException;
 import org.broadinstitute.hellbender.utils.Utils;
 import org.broadinstitute.hellbender.utils.read.GATKRead;
 import org.broadinstitute.hellbender.utils.read.ReadUtils;
@@ -67,6 +69,11 @@ public final class MarkDuplicatesSpark extends GATKSparkTool {
     @Override
     public List<ReadFilter> getDefaultReadFilters() {
         return Collections.singletonList(ReadFilterLibrary.ALLOW_ALL_READS);
+    }
+
+    @Override
+    public ReadInputMergingPolicy getReadInputMergingPolicy() {
+        return ReadInputMergingPolicy.concatMerge;
     }
 
     /**
@@ -184,6 +191,14 @@ public final class MarkDuplicatesSpark extends GATKSparkTool {
 
     @Override
     protected void runTool(final JavaSparkContext ctx) {
+        // Check if we are using multiple inputs that the headers are all in the correct querygrouped ordering
+        Map<String, SAMFileHeader> headerMap = getReadSouceHeaderMap();
+        if (headerMap.size() > 1) {
+            headerMap.entrySet().stream().forEach(h -> {if(!ReadUtils.isReadNameGroupedBam(h.getValue())) {
+                throw new UserException("Multiple inputs to MarkDuplicatesSpark detected but input "+h.getKey()+" was sorted in "+h.getValue().getSortOrder()+" order");
+                    }});
+        }
+
         JavaRDD<GATKRead> reads = getReads();
         final OpticalDuplicateFinder finder = opticalDuplicatesArgumentCollection.READ_NAME_REGEX != null ?
                 new SerializableOpticalDuplicatesFinder(opticalDuplicatesArgumentCollection.READ_NAME_REGEX, opticalDuplicatesArgumentCollection.OPTICAL_DUPLICATE_PIXEL_DISTANCE) : null;
