@@ -553,7 +553,7 @@ task GermlineCNVCallerCohortMode {
 
     output {
         File gcnv_model_tar = "${cohort_entity_id}-gcnv-model-${scatter_index}.tar.gz"
-        Array[File] gcnv_call_tars = glob("*-gcnv-calls.tar.gz")
+        Array[File] gcnv_call_tars = glob("${cohort_entity_id}-shard-${scatter_index}-sample-*-gcnv-calls.tar.gz")
         File gcnv_tracking_tar = "${cohort_entity_id}-gcnv-tracking-${scatter_index}.tar.gz"
         File calling_config_json = "${output_dir_}/${cohort_entity_id}-calls/calling_config.json"
         File denoising_config_json = "${output_dir_}/${cohort_entity_id}-calls/denoising_config.json"
