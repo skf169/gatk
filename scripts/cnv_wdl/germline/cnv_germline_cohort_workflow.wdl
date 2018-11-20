@@ -478,6 +478,8 @@ task GermlineCNVCallerCohortMode {
     String output_dir_ = select_first([output_dir, "out"])
     Int num_samples = length(read_count_files)
 
+    String dollar = "$" #WDL workaround, see https://github.com/broadinstitute/cromwell/issues/1819
+
     command <<<
         set -e
         mkdir ${output_dir_}
@@ -536,13 +538,15 @@ task GermlineCNVCallerCohortMode {
             --caller-external-admixing-rate ${default="1.00" caller_external_admixing_rate} \
             --disable-annealing ${default="false" disable_annealing}
 
-        tar czf ${cohort_entity_id}-gcnv-model-${scatter_index}.tar.gz -C ${output_dir_}/${cohort_entity_id}-model .
-        tar czf ${cohort_entity_id}-gcnv-tracking-${scatter_index}.tar.gz -C ${output_dir_}/${cohort_entity_id}-tracking .
+        tar czf ${cohort_entity_id}-gcnv-model-shard-${scatter_index}.tar.gz -C ${output_dir_}/${cohort_entity_id}-model .
+        tar czf ${cohort_entity_id}-gcnv-tracking-shard-${scatter_index}.tar.gz -C ${output_dir_}/${cohort_entity_id}-tracking .
 
         CURRENT_SAMPLE=0
-        while [ $CURRENT_SAMPLE -lt ${num_samples} ]; do
-            CURRENT_SAMPLE_WITH_LEADING_ZEROS=$(printf "%05d" $CURRENT_SAMPLE)
-            tar czf ${cohort_entity_id}-shard-${scatter_index}-sample-$CURRENT_SAMPLE_WITH_LEADING_ZEROS-gcnv-calls.tar.gz -C ${output_dir_}/${cohort_entity_id}-calls/SAMPLE_$CURRENT_SAMPLE .
+        NUM_SAMPLES=${num_samples}
+        NUM_DIGITS=${dollar}{#NUM_SAMPLES}
+        while [ $CURRENT_SAMPLE -lt $NUM_SAMPLES ]; do
+            CURRENT_SAMPLE_WITH_LEADING_ZEROS=$(printf "%0${dollar}{NUM_DIGITS}d" $CURRENT_SAMPLE)
+            tar czf ${cohort_entity_id}-gcnv-calls-${scatter_index}-sample-$CURRENT_SAMPLE_WITH_LEADING_ZEROS.tar.gz -C ${output_dir_}/${cohort_entity_id}-calls/SAMPLE_$CURRENT_SAMPLE .
             let CURRENT_SAMPLE=CURRENT_SAMPLE+1
         done
     >>>
@@ -556,9 +560,9 @@ task GermlineCNVCallerCohortMode {
     }
 
     output {
-        File gcnv_model_tar = "${cohort_entity_id}-gcnv-model-${scatter_index}.tar.gz"
-        Array[File] gcnv_call_tars = glob("${cohort_entity_id}-shard-${scatter_index}-sample-*-gcnv-calls.tar.gz")
-        File gcnv_tracking_tar = "${cohort_entity_id}-gcnv-tracking-${scatter_index}.tar.gz"
+        File gcnv_model_tar = "${cohort_entity_id}-gcnv-model-shard-${scatter_index}.tar.gz"
+        Array[File] gcnv_call_tars = glob("${cohort_entity_id}-gcnv-calls-shard-${scatter_index}-sample-*.tar.gz")
+        File gcnv_tracking_tar = "${cohort_entity_id}-gcnv-tracking-shard-${scatter_index}.tar.gz"
         File calling_config_json = "${output_dir_}/${cohort_entity_id}-calls/calling_config.json"
         File denoising_config_json = "${output_dir_}/${cohort_entity_id}-calls/denoising_config.json"
         File gcnvkernel_version_json = "${output_dir_}/${cohort_entity_id}-calls/gcnvkernel_version.json"
