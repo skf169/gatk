@@ -546,7 +546,7 @@ task GermlineCNVCallerCohortMode {
         NUM_DIGITS=${dollar}{#NUM_SAMPLES}
         while [ $CURRENT_SAMPLE -lt $NUM_SAMPLES ]; do
             CURRENT_SAMPLE_WITH_LEADING_ZEROS=$(printf "%0${dollar}{NUM_DIGITS}d" $CURRENT_SAMPLE)
-            tar czf ${cohort_entity_id}-gcnv-calls-${scatter_index}-sample-$CURRENT_SAMPLE_WITH_LEADING_ZEROS.tar.gz -C ${output_dir_}/${cohort_entity_id}-calls/SAMPLE_$CURRENT_SAMPLE .
+            tar czf ${cohort_entity_id}-gcnv-calls-shard-${scatter_index}-sample-$CURRENT_SAMPLE_WITH_LEADING_ZEROS.tar.gz -C ${output_dir_}/${cohort_entity_id}-calls/SAMPLE_$CURRENT_SAMPLE .
             let CURRENT_SAMPLE=CURRENT_SAMPLE+1
         done
     >>>
