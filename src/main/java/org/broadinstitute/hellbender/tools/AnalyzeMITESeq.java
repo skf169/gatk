@@ -2,6 +2,10 @@ package org.broadinstitute.hellbender.tools;
 
 import htsjdk.samtools.*;
 import org.broadinstitute.barclay.argparser.Argument;
+import org.broadinstitute.barclay.argparser.BetaFeature;
+import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
+import org.broadinstitute.barclay.help.DocumentedFeature;
+import org.broadinstitute.hellbender.cmdline.programgroups.CoverageAnalysisProgramGroup;
 import org.broadinstitute.hellbender.engine.GATKTool;
 import org.broadinstitute.hellbender.engine.ReferenceDataSource;
 import org.broadinstitute.hellbender.engine.filters.ReadFilterLibrary;
@@ -9,9 +13,18 @@ import org.broadinstitute.hellbender.exceptions.UserException;
 import org.broadinstitute.hellbender.tools.spark.utils.HopscotchMap;
 import org.broadinstitute.hellbender.utils.SimpleInterval;
 import org.broadinstitute.hellbender.utils.read.GATKRead;
+import org.broadinstitute.hellbender.utils.variant.GATKVCFConstants;
+import picard.cmdline.programgroups.VariantEvaluationProgramGroup;
 
 import java.util.*;
 
+@DocumentedFeature
+@CommandLineProgramProperties(
+        summary = "(Experimental) Processes reads from a MITESeq experiment.",
+        oneLineSummary = "(EXPERIMENTAL) Processes reads from a MITESeq experiment.",
+        programGroup = CoverageAnalysisProgramGroup.class
+)
+@BetaFeature
 public class AnalyzeMITESeq extends GATKTool {
     @Argument(doc = "minimum quality score for analyzed portion of read", fullName = "min-q")
     private static int minQ = 30;
@@ -27,7 +40,7 @@ public class AnalyzeMITESeq extends GATKTool {
 
     private byte[] refSeq;
     private List<Exon> exonList;
-    private final HopscotchMap<SNVCollectionCount, Integer, SNVCollectionCount> variationCounts = new HopscotchMap<>(1000000);
+    private final HopscotchMap<SNVCollectionCount, Integer, SNVCollectionCount> variationCounts = new HopscotchMap<>(10000000);
 
     @Override
     public boolean requiresReads() { return true; }
@@ -90,7 +103,7 @@ public class AnalyzeMITESeq extends GATKTool {
 
         @Override
         public String toString() {
-            return refIndex + ":" + (char)refCall + "->" + (char)variantCall;
+            return refIndex + ":" + (char)refCall + ">" + (char)variantCall;
         }
     }
 
@@ -242,62 +255,97 @@ public class AnalyzeMITESeq extends GATKTool {
     }
 
     private void processRead( final GATKRead read ) {
-        // ignore unaligned reads
-        if ( read.isUnmapped() ) return;
+        // ignore unaligned reads and non-primary alignments
+        if ( read.isUnmapped() || read.isSecondaryAlignment() || read.isSupplementaryAlignment() ) return;
 
-        // find pieces of the read that can be analyzed
-        final byte[] quals = read.getBaseQualities();
+        final byte[] quals = read.getBaseQualitiesNoCopy();
 
-        // advance start until we find a high quality call
+        // find initial end-trim
         int start = 0;
+        int hiQCount = 0;
         while ( start < quals.length ) {
             if ( quals[start] < minQ ) {
-                start += 1;
-                continue;
+                hiQCount = 0;
+            } else if ( ++hiQCount == minLength ) {
+                break;
             }
-            // advance end until we find a low quality call
-            int end = start;
-            while ( ++end < quals.length ) {
-                if ( quals[end] < minQ ) break;
-            }
-
-            // analyze high quality pieces of sufficient length
-            if ( end-start >= minLength ) {
-                analyze(read, start, end);
-            }
-
-            // find another high quality region, starting where we left off
-            start = end + 1;
+            start += 1;
         }
+        if ( start == quals.length ) return;
+        start -= minLength - 1;
+
+        // find final end-trim
+        int end = quals.length - 1;
+        hiQCount = 0;
+        while ( end >= 0 ) {
+            if ( quals[end] < minQ ) {
+                hiQCount = 0;
+            } else if ( ++hiQCount == minLength ) {
+                break;
+            }
+            end -= 1;
+        }
+        end += minLength;
+
+        analyze( read, start, end );
     }
 
     private void analyze( final GATKRead read, final int start, final int end ) {
         List<SNV> variations = new ArrayList<>();
         final byte[] readSeq = read.getBasesNoCopy();
+        final byte[] readQuals = read.getBaseQualitiesNoCopy();
         int readIndex = 0;
         int refIndex = read.getStart() - 1; // 0-based numbering
-        final Iterator<CigarElement> cigarIterator = read.getCigar().getCigarElements().iterator();
+        final Cigar cigar = read.getCigar();
+
+        // end-clipped reads are no good unless they go "off the end" of the amplicon
+        if ( cigar.getLastCigarElement().getOperator() == CigarOperator.S ) {
+            if ( read.getEnd() != refSeq.length - 1 ) {
+                return;
+            }
+        }
+        final Iterator<CigarElement> cigarIterator = cigar.getCigarElements().iterator();
         CigarElement cigarElement = cigarIterator.next();
         CigarOperator cigarOperator = cigarElement.getOperator();
-        int cigarElementIdx = 0;
-        while ( readIndex < end ) {
-            if ( cigarElementIdx == cigarElement.getLength() ) {
-                cigarElement = cigarIterator.next();
-                cigarOperator = cigarElement.getOperator();
-                cigarElementIdx = 0;
+
+        // beginning-clipped reads are no good unless they start at the beginning of the amplicon
+        if ( cigarOperator == CigarOperator.S ) {
+            if ( refIndex > 0 ) {
+                return;
             }
+        }
+
+        int cigarElementCount = cigarElement.getLength();
+        while ( true ) {
             if ( readIndex >= start ) {
-                if ( !cigarOperator.consumesReadBases() ) {
-                    variations.add(new SNV(refIndex, refSeq[refIndex], (byte)'-'));
-                } else if ( !cigarOperator.consumesReferenceBases() ) {
-                    variations.add(new SNV(refIndex, (byte)'-', readSeq[readIndex]));
-                } else if ( (readSeq[readIndex] & 7) != (refSeq[refIndex] & 7) ) {
+                if ( cigarOperator == CigarOperator.D ) {
+                    variations.add(new SNV(refIndex, refSeq[refIndex], (byte)'X'));
+                } else if ( cigarOperator == CigarOperator.I ) {
+                    // low-quality variations spoil the read
+                    if ( readQuals[readIndex] < minQ ) {
+                        return;
+                    }
+                    variations.add(new SNV(refIndex, (byte)'X', readSeq[readIndex]));
+                } else if ( cigarOperator == CigarOperator.M &&
+                            (readSeq[readIndex] & 7) != (refSeq[refIndex] & 7) ) {
+                    // low-quality variations spoil the read
+                    if ( readQuals[readIndex] < minQ ) {
+                        return;
+                    }
                     variations.add(new SNV(refIndex, refSeq[refIndex], readSeq[readIndex]));
                 }
             }
-            if ( cigarOperator.consumesReadBases() ) readIndex += 1;
+            if ( cigarOperator.consumesReadBases() ) {
+                if ( ++readIndex == end ) {
+                    break;
+                }
+            }
             if ( cigarOperator.consumesReferenceBases() ) refIndex += 1;
-            cigarElementIdx += 1;
+            if ( --cigarElementCount == 0 ) {
+                cigarElement = cigarIterator.next();
+                cigarOperator = cigarElement.getOperator();
+                cigarElementCount = cigarElement.getLength();
+            }
         }
         if ( !variations.isEmpty() &&
                 refIndex - variations.get(variations.size()-1).getRefIndex() >= flankingLength &&
