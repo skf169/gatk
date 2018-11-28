@@ -3,9 +3,7 @@ package org.broadinstitute.hellbender.utils.help;
 import org.broadinstitute.hellbender.utils.Utils;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 public final class HelpConstants {
 
@@ -54,6 +52,10 @@ public final class HelpConstants {
 
     public final static String DOC_CAT_RNA = "RNA-Specific Tools";
     public final static String DOC_CAT_RNA_SUMMARY = "Tools intended to be used for processing RNA data.";
+
+    public final static String DOC_CAT_REFERENCE = "Reference Tools";
+    public final static String DOC_CAT_REFERENCE_SUMMARY = "Tools for manipulating reference sequences files.";
+
 
     // End GATK Program groups
 

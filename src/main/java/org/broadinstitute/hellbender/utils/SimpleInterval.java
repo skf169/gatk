@@ -4,8 +4,6 @@
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.Locatable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.broadinstitute.hellbender.exceptions.GATKException;
 import org.broadinstitute.hellbender.exceptions.UserException;
 
@@ -34,7 +32,7 @@ public final class SimpleInterval implements Locatable, Serializable {
      * @param end  1-based inclusive end position
      */
     public SimpleInterval(final String contig, final int start, final int end){
-        validatePositions(contig, start, end);
+        //validatePositions(contig, start, end);
         this.contig = contig;
         this.start = start;
         this.end = end;
