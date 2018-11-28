@@ -1,34 +1,31 @@
 //package org.broadinstitute.hellbender.tools.walkers.fasta;
 //
+//import htsjdk.variant.variantcontext.Allele;
+//import htsjdk.variant.variantcontext.Genotype;
+//import htsjdk.variant.variantcontext.VariantContext;
 //import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 //import org.broadinstitute.barclay.help.DocumentedFeature;
+//import org.broadinstitute.gatk.engine.SampleUtils;
+//import org.broadinstitute.gatk.engine.arguments.StandardVariantContextInputArgumentCollection;
+//import org.broadinstitute.gatk.engine.walkers.*;
+//import org.broadinstitute.gatk.utils.GenomeLoc;
+//import org.broadinstitute.gatk.utils.collections.Pair;
 //import org.broadinstitute.gatk.utils.commandline.Argument;
 //import org.broadinstitute.gatk.utils.commandline.ArgumentCollection;
 //import org.broadinstitute.gatk.utils.commandline.Input;
 //import org.broadinstitute.gatk.utils.commandline.RodBinding;
-//import org.broadinstitute.gatk.engine.CommandLineGATK;
-//import org.broadinstitute.gatk.engine.arguments.StandardVariantContextInputArgumentCollection;
 //import org.broadinstitute.gatk.utils.contexts.AlignmentContext;
 //import org.broadinstitute.gatk.utils.contexts.ReferenceContext;
-//import org.broadinstitute.gatk.utils.refdata.RefMetaDataTracker;
-//import org.broadinstitute.gatk.engine.walkers.*;
-//import org.broadinstitute.gatk.utils.BaseUtils;
-//import org.broadinstitute.gatk.utils.GenomeLoc;
-//import org.broadinstitute.gatk.engine.SampleUtils;
-//import org.broadinstitute.gatk.utils.collections.Pair;
 //import org.broadinstitute.gatk.utils.exceptions.UserException;
-//import org.broadinstitute.gatk.utils.help.DocumentedGATKFeature;
-//import org.broadinstitute.gatk.utils.help.HelpConstants;
-//import htsjdk.variant.variantcontext.Allele;
-//import htsjdk.variant.variantcontext.Genotype;
-//import htsjdk.variant.variantcontext.VariantContext;
+//import org.broadinstitute.gatk.utils.refdata.RefMetaDataTracker;
 //import org.broadinstitute.gatk.utils.variant.GATKVCFConstants;
+//import org.broadinstitute.hellbender.utils.BaseUtils;
 //import picard.cmdline.programgroups.ReferenceProgramGroup;
 //
 //import java.util.Arrays;
 //import java.util.List;
-//import java.util.Set;
 //import java.util.Optional;
+//import java.util.Set;
 //
 //
 ///**
@@ -75,7 +72,6 @@
 //@CommandLineProgramProperties(
 //  summary = "todo", oneLineSummary = "todo", programGroup = ReferenceProgramGroup.class)
 //@Reference(window=@Window(start=-1,stop=50))
-//@Requires(value={DataSource.REFERENCE})
 //public class FastaAlternateReferenceMaker extends FastaReferenceMaker {
 //
 //  /**
@@ -108,8 +104,8 @@
 //  private static final String EMPTY_BASE = " ";
 //
 //  @Override
-//  public void initialize() {
-//    super.initialize();
+//  public void onTraversalStart() {
+//    super.onTraversalStart();
 //    if ( iupacSample != null ) {
 //      final List<String> rodName = Arrays.asList(variantCollection.variants.getName());
 //      final Set<String> samples = SampleUtils.getUniqueSamplesFromRods(getToolkit(), rodName);
