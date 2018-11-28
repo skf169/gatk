@@ -35,7 +35,7 @@ MAXARGS=0
 D="/Users/jonn/Development/references"
 #refAFile="${D}/GRCh37.p13.genome.dict"
 refAFile="${D}/human_g1k_v37.dict"
-#refAFile="${D}/ucsc.hg19.dict"
+refAFile="${D}/ucsc.hg19.dict"
 refBFile="${D}/Homo_sapiens_assembly19.dict"
 
 ################################################################################
