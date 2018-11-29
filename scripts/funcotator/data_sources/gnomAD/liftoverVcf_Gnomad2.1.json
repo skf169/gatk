@@ -1,11 +1,11 @@
 {
   "LiftoverVcf.gatk_docker": "broadinstitute/gatk:4.0.5.0",
 
-  "LiftoverVcf.variant_vcf": "File",
-  "LiftoverVcf.chain_file": "File",
-  "LiftoverVcf.target_reference_sequence_fasta_file": "File",
-  "LiftoverVcf.lifted_over_vcf_name": "String",
-  "LiftoverVcf.lifted_over_rejects_vcf_name": "String",
+  "LiftoverVcf.variant_vcf": "gs://gnomad-public/release/2.1/vcf/genomes/gnomad.genomes.r2.1.sites.vcf.bgz",
+  "LiftoverVcf.chain_file": "b37ToHg38.over.chain",
+  "LiftoverVcf.target_reference_sequence_fasta_file": "gs://broad-references/hg38/v0/Homo_sapiens_assembly38.fasta",
+  "LiftoverVcf.lifted_over_vcf_name": "gnomad.genomes.r2.1.sites.liftoverToHg38.vcf.gz",
+  "LiftoverVcf.lifted_over_rejects_vcf_name": "gnomad.genomes.r2.1.sites.liftoverToHg38.REJECTS.vcf.gz",
 
   "LiftoverVcf.write_original_position": "true",
   "LiftoverVcf.warn_on_missing_contig": "true",
