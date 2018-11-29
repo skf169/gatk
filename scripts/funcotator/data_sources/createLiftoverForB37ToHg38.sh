@@ -34,6 +34,7 @@ shopt -s expand_aliases
 ################################################################################
 
 HG19_HG38_CHAIN_FILE_URL='http://hgdownload.cse.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz'
+outChainFile=b37ToHg38.over.chain
 
 ################################################################################
 
@@ -192,7 +193,7 @@ function printSequenceDictionaryComparison() {
 	echo '75e4c8d17cd4addf3917d1703cacaf25	GL000200.1	chr9_gl000200_random'
 	echo '7daaa45c66b288847b9b32b964e623d3	GL000211.1	chrUn_gl000211'
 	echo '7de00226bb7df1c57276ca6baabafd15	GL000247.1	chrUn_gl000247'
-	echo '7e0e2e580297b7764e31dbc80c2540dd	X	chrX'
+	echo '7e0e2e580297b7764e31dbc80c2540dd	X						chrX'
 	echo '7fed60298a8d62ff808b74b6ce820001	GL000233.1	chrUn_gl000233'
 	echo '851106a74238044126131ce2a8e5847c	GL000210.1	chr21_gl000210_random'
 	echo '868e7784040da90d900d2d1b667a1383	GL000198.1	chr9_gl000198_random'
@@ -223,43 +224,43 @@ function printSequenceDictionaryComparison() {
 	echo 'f977edd13bac459cb2ed4a5457dba1b3	GL000219.1	chrUn_gl000219'
 	echo 'fc35de963c57bf7648429e6454f1c9db	GL000220.1	chrUn_gl000220'
 	echo 'fdcd739913efa1fdc64b6c0cd7016779	GL000236.1	chrUn_gl000236'
-	echo '1b22b98cdeb4a9304cb5d48026a85128	1	chr1'
-	echo 'a0d9851da00400dec1098a9255ac712e	2	chr2'
-	echo '23dccd106897542ad87d2765d28a19a1	4	chr4'
-	echo '0740173db9ffd264d728f32784845cd7	5	chr5'
-	echo '1d3a93a248d92a729ee764823acbbc6b	6	chr6'
-	echo '618366e953d6aaad97dbe4777c29375e	7	chr7'
-	echo '96f514a9929e410c6651697bded59aec	8	chr8'
-	echo '3e273117f15e0a400f01055d9f393768	9	chr9'
-	echo '988c28e000e84c26d552359af1ea2e1d	10	chr10'
-	echo '98c59049a2df285c76ffb1c6db8f8b96	11	chr11'
-	echo '51851ac0e1a115847ad36449b0015864	12	chr12'
-	echo '283f8d7892baa81b510a015719ca7b0b	13	chr13'
-	echo '98f3cae32b2a2e9524bc19813927542e	14	chr14'
-	echo 'e5645a794a8238215b2cd77acb95a078	15	chr15'
-	echo 'fc9b1a7b42b97a864f56b348b06095e6	16	chr16'
-	echo '351f64d4f4f9ddd45b35336ad97aa6de	17	chr17'
-	echo 'b15d4b2d29dde9d3e4f93d1d0f2cbc9c	18	chr18'
-	echo '1aacd71f30db8e561810913e0b72636d	19	chr19'
-	echo '0dec9660ec1efaaf33281c0d5ea2560f	20	chr20'
-	echo '2979a6085bfe28e3ad6f552f361ed74d	21	chr21'
-	echo 'a718acaa6135fdca8357d5bfe94211dd	22	chr22'
-	echo '1fa3474750af0948bdf97d5a0ee52e51	Y	----'
-	echo '6743bd63b3ff2b5b8985d8933c53290a	NC_007605	----'
-	echo 'c68f52674c9fb33aef52dcf399755519	MT	----'
-	echo 'fdfd811849cc2fadebc929bb925902e5	3	----'
-	echo '094d037050cad692b57ea12c4fef790f	----	chr6_qbl_hap6'
-	echo '18c17e1641ef04873b15f40f6c8659a4	----	chr6_cox_hap2'
-	echo '1e86411d73e6f00a10590f976be01623	----	chrY'
-	echo '2a3c677c426a10e137883ae1ffb8da3f	----	chr6_dbb_hap3'
-	echo '3b6d666200e72bcc036bf88a4d7e0749	----	chr6_ssto_hap7'
-	echo '641e4338fa8d52a5b781bd2a2c08d3c3	----	chr3'
-	echo '9d51d4152174461cd6715c7ddc588dc8	----	chr6_mann_hap4'
-	echo 'd2ed829b8a1628d16cbeee88e88e39eb	----	chrM'
-	echo 'd89517b400226d3b56e753972a7cad67	----	chr17_ctg5_hap1'
-	echo 'efed415dd8742349cb7aaca054675b9a	----	chr6_mcf_hap5'
-	echo 'fa24f81b680df26bcfb6d69b784fbe36	----	chr4_ctg9_hap1'
-	echo 'fe71bc63420d666884f37a3ad79f3317	----	chr6_apd_hap1'
+	echo '1b22b98cdeb4a9304cb5d48026a85128	1						chr1'
+	echo 'a0d9851da00400dec1098a9255ac712e	2						chr2'
+	echo '23dccd106897542ad87d2765d28a19a1	4						chr4'
+	echo '0740173db9ffd264d728f32784845cd7	5						chr5'
+	echo '1d3a93a248d92a729ee764823acbbc6b	6						chr6'
+	echo '618366e953d6aaad97dbe4777c29375e	7						chr7'
+	echo '96f514a9929e410c6651697bded59aec	8						chr8'
+	echo '3e273117f15e0a400f01055d9f393768	9						chr9'
+	echo '988c28e000e84c26d552359af1ea2e1d	10					chr10'
+	echo '98c59049a2df285c76ffb1c6db8f8b96	11					chr11'
+	echo '51851ac0e1a115847ad36449b0015864	12					chr12'
+	echo '283f8d7892baa81b510a015719ca7b0b	13					chr13'
+	echo '98f3cae32b2a2e9524bc19813927542e	14					chr14'
+	echo 'e5645a794a8238215b2cd77acb95a078	15					chr15'
+	echo 'fc9b1a7b42b97a864f56b348b06095e6	16					chr16'
+	echo '351f64d4f4f9ddd45b35336ad97aa6de	17					chr17'
+	echo 'b15d4b2d29dde9d3e4f93d1d0f2cbc9c	18					chr18'
+	echo '1aacd71f30db8e561810913e0b72636d	19					chr19'
+	echo '0dec9660ec1efaaf33281c0d5ea2560f	20					chr20'
+	echo '2979a6085bfe28e3ad6f552f361ed74d	21					chr21'
+	echo 'a718acaa6135fdca8357d5bfe94211dd	22					chr22'
+	echo '1fa3474750af0948bdf97d5a0ee52e51	Y						----'
+	echo '6743bd63b3ff2b5b8985d8933c53290a	NC_007605		----'
+	echo 'c68f52674c9fb33aef52dcf399755519	MT					----'
+	echo 'fdfd811849cc2fadebc929bb925902e5	3						----'
+	echo '094d037050cad692b57ea12c4fef790f	----				chr6_qbl_hap6'
+	echo '18c17e1641ef04873b15f40f6c8659a4	----				chr6_cox_hap2'
+	echo '1e86411d73e6f00a10590f976be01623	----				chrY'
+	echo '2a3c677c426a10e137883ae1ffb8da3f	----				chr6_dbb_hap3'
+	echo '3b6d666200e72bcc036bf88a4d7e0749	----				chr6_ssto_hap7'
+	echo '641e4338fa8d52a5b781bd2a2c08d3c3	----				chr3'
+	echo '9d51d4152174461cd6715c7ddc588dc8	----				chr6_mann_hap4'
+	echo 'd2ed829b8a1628d16cbeee88e88e39eb	----				chrM'
+	echo 'd89517b400226d3b56e753972a7cad67	----				chr17_ctg5_hap1'
+	echo 'efed415dd8742349cb7aaca054675b9a	----				chr6_mcf_hap5'
+	echo 'fa24f81b680df26bcfb6d69b784fbe36	----				chr4_ctg9_hap1'
+	echo 'fe71bc63420d666884f37a3ad79f3317	----				chr6_apd_hap1'
 }
 
 function printDiffTable() {
@@ -341,17 +342,225 @@ if ${ISCALLEDBYUSER} ; then
   hg19LiftoverFile=$( makeTemp )
   curl "${HG19_HG38_CHAIN_FILE_URL}" | gunzip > ${hg19LiftoverFile}
 
+	error "Modifying contig names and creating chain file..."
   # Do the appropriate change here:
   awk '{                                  \
     if ( $1 == "chain" ) {                \
       if ( $3 ~ /^chrM/ ) {               \
-        print "MMMMMM"                    \
+        $3 = "MT"                         \
       }                                   \
-    else if ( $3 ~ /^chr/ ) {             \
-      print "CHRUNGHY" }                  \
+      else if ( $3 ~ /chr11_gl000202_random/ ) {               \
+        $3 = "GL000202.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000244/ ) {               \
+        $3 = "GL000244.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000235/ ) {               \
+        $3 = "GL000235.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000238/ ) {               \
+        $3 = "GL000238.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000226/ ) {               \
+        $3 = "GL000226.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000218/ ) {               \
+        $3 = "GL000218.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000249/ ) {               \
+        $3 = "GL000249.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000242/ ) {               \
+        $3 = "GL000242.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000221/ ) {               \
+        $3 = "GL000221.1"                        \
+      }                                                \
+      else if ( $3 ~ /chr1_gl000192_random/ ) {               \
+        $3 = "GL000192.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000223/ ) {               \
+        $3 = "GL000223.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000232/ ) {               \
+        $3 = "GL000232.1"                        \
+      }                                                \
+      else if ( $3 ~ /chr17_gl000206_random/ ) {               \
+        $3 = "GL000206.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000240/ ) {               \
+        $3 = "GL000240.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000214/ ) {               \
+        $3 = "GL000214.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000212/ ) {               \
+        $3 = "GL000212.1"                        \
+      }                                                \
+      else if ( $3 ~ /chr9_gl000199_random/ ) {               \
+        $3 = "GL000199.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000248/ ) {               \
+        $3 = "GL000248.1"                        \
+      }                                                \
+      else if ( $3 ~ /chr7_gl000195_random/ ) {               \
+        $3 = "GL000195.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000215/ ) {               \
+        $3 = "GL000215.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000225/ ) {               \
+        $3 = "GL000225.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000216/ ) {               \
+        $3 = "GL000216.1"                        \
+      }                                                \
+      else if ( $3 ~ /chr4_gl000194_random/ ) {               \
+        $3 = "GL000194.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000217/ ) {               \
+        $3 = "GL000217.1"                        \
+      }                                                \
+      else if ( $3 ~ /chr8_gl000197_random/ ) {               \
+        $3 = "GL000197.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000222/ ) {               \
+        $3 = "GL000222.1"                        \
+      }                                                \
+      else if ( $3 ~ /chr9_gl000200_random/ ) {               \
+        $3 = "GL000200.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000211/ ) {               \
+        $3 = "GL000211.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000247/ ) {               \
+        $3 = "GL000247.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000233/ ) {               \
+        $3 = "GL000233.1"                        \
+      }                                                \
+      else if ( $3 ~ /chr21_gl000210_random/ ) {               \
+        $3 = "GL000210.1"                        \
+      }                                                \
+      else if ( $3 ~ /chr9_gl000198_random/ ) {               \
+        $3 = "GL000198.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000245/ ) {               \
+        $3 = "GL000245.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000234/ ) {               \
+        $3 = "GL000234.1"                        \
+      }                                                \
+      else if ( $3 ~ /chr17_gl000203_random/ ) {               \
+        $3 = "GL000203.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000239/ ) {               \
+        $3 = "GL000239.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000213/ ) {               \
+        $3 = "GL000213.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000227/ ) {               \
+        $3 = "GL000227.1"                        \
+      }                                                \
+      else if ( $3 ~ /chr19_gl000208_random/ ) {               \
+        $3 = "GL000208.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000230/ ) {               \
+        $3 = "GL000230.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000231/ ) {               \
+        $3 = "GL000231.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000228/ ) {               \
+        $3 = "GL000228.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000243/ ) {               \
+        $3 = "GL000243.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000229/ ) {               \
+        $3 = "GL000229.1"                        \
+      }                                                \
+      else if ( $3 ~ /chr17_gl000205_random/ ) {               \
+        $3 = "GL000205.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000224/ ) {               \
+        $3 = "GL000224.1"                        \
+      }                                                \
+      else if ( $3 ~ /chr1_gl000191_random/ ) {               \
+        $3 = "GL000191.1"                        \
+      }                                                \
+      else if ( $3 ~ /chr8_gl000196_random/ ) {               \
+        $3 = "GL000196.1"                        \
+      }                                                \
+      else if ( $3 ~ /chr4_gl000193_random/ ) {               \
+        $3 = "GL000193.1"                        \
+      }                                                \
+      else if ( $3 ~ /chr9_gl000201_random/ ) {               \
+        $3 = "GL000201.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000237/ ) {               \
+        $3 = "GL000237.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000246/ ) {               \
+        $3 = "GL000246.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000241/ ) {               \
+        $3 = "GL000241.1"                        \
+      }                                                \
+      else if ( $3 ~ /chr17_gl000204_random/ ) {               \
+        $3 = "GL000204.1"                        \
+      }                                                \
+      else if ( $3 ~ /chr18_gl000207_random/ ) {               \
+        $3 = "GL000207.1"                        \
+      }                                                \
+      else if ( $3 ~ /chr19_gl000209_random/ ) {               \
+        $3 = "GL000209.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000219/ ) {               \
+        $3 = "GL000219.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000220/ ) {               \
+        $3 = "GL000220.1"                        \
+      }                                                \
+      else if ( $3 ~ /chrUn_gl000236/ ) {               \
+        $3 = "GL000236.1"                        \
+      }                                               \
+      else if ( $3 ~ /chr6_qbl_hap6/ ) {               \
+        $3 = $3                                         \
+      }                                                \
+      else if ( $3 ~ /chr6_cox_hap2/ ) {               \
+        $3 = $3                                         \
+      }                                                \
+      else if ( $3 ~ /chr6_dbb_hap3/ ) {               \
+        $3 = $3                                         \
+      }                                                \
+      else if ( $3 ~ /chr6_ssto_hap7/ ) {               \
+        $3 = $3                                         \
+      }                                                \
+      else if ( $3 ~ /chr6_mann_hap4/ ) {               \
+        $3 = $3                                         \
+      }                                                \
+      else if ( $3 ~ /chr17_ctg5_hap1/ ) {               \
+        $3 = $3                                         \
+      }                                                \
+      else if ( $3 ~ /chr6_mcf_hap5/ ) {               \
+        $3 = $3                                         \
+      }                                                \
+      else if ( $3 ~ /chr4_ctg9_hap1/ ) {               \
+        $3 = $3                                         \
+      }                                                \
+      else if ( $3 ~ /chr6_apd_hap1/ ) {               \
+        $3 = $3                                         \
+      }                                                \
+			else if ( $3 ~ /^chr[0123456789XY]*/ ) {           \
+      	$3 = substr($3,4)                                  \
+			}                                   \
     }                                     \
     ; print                               \
-  }' ${hg19LiftoverFile} 
+  }' ${hg19LiftoverFile} > ${outChainFile}
+
+	error "Created a b37 -> hg38 chain file: ${outChainFile}"
 
   exit 0
 fi
