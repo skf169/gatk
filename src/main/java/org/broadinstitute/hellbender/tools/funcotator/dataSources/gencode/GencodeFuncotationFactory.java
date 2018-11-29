@@ -240,6 +240,31 @@ public class GencodeFuncotationFactory extends DataSourceFuncotationFactory {
                                      final LinkedHashMap<String, String> annotationOverrides,
                                      final FeatureInput<? extends Feature> mainFeatureInput,
                                      final FlankSettings flankSettings) {
+        this(gencodeTranscriptFastaFilePath, version, name, transcriptSelectionMode, userRequestedTranscripts, annotationOverrides, mainFeatureInput, flankSettings, false);
+    }
+
+    /**
+     * Create a {@link GencodeFuncotationFactory}.
+     *
+     * @param gencodeTranscriptFastaFilePath {@link Path} to the FASTA file containing the sequences of all transcripts in the Gencode data source.
+     * @param version The version {@link String} of Gencode from which {@link Funcotation}s will be made.
+     * @param name A {@link String} containing the name of this {@link GencodeFuncotationFactory}.
+     * @param transcriptSelectionMode The {@link TranscriptSelectionMode} by which representative/verbose transcripts will be chosen for overlapping variants.
+     * @param userRequestedTranscripts A {@link Set<String>} containing Gencode TranscriptIDs that the user requests to be annotated with priority over all other transcripts for overlapping variants.
+     * @param annotationOverrides A {@link LinkedHashMap<String, String>} containing user-specified overrides for specific {@link Funcotation}s.
+     * @param mainFeatureInput The backing {@link FeatureInput} for this {@link GencodeFuncotationFactory}, from which all {@link Funcotation}s will be created.
+     * @param flankSettings Settings object containing our 5'/3' flank sizes
+     * @param isDataSourceB37 If {@code true}, indicates that the data source behind this {@link GencodeFuncotationFactory} contains B37 data.
+     */
+    public GencodeFuncotationFactory(final Path gencodeTranscriptFastaFilePath,
+                                     final String version,
+                                     final String name,
+                                     final TranscriptSelectionMode transcriptSelectionMode,
+                                     final Set<String> userRequestedTranscripts,
+                                     final LinkedHashMap<String, String> annotationOverrides,
+                                     final FeatureInput<? extends Feature> mainFeatureInput,
+                                     final FlankSettings flankSettings,
+                                     final boolean isDataSourceB37) {
 
         super(mainFeatureInput);
 
@@ -257,6 +282,8 @@ public class GencodeFuncotationFactory extends DataSourceFuncotationFactory {
         this.version = version;
 
         this.name = name;
+
+        this.dataSourceIsB37 = isDataSourceB37;
 
         // Go through each requested transcript and remove the version numbers from them if they exist:
         this.userRequestedTranscripts = new HashSet<>();
