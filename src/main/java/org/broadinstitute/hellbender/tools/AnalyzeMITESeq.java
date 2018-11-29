@@ -9,12 +9,11 @@ import org.broadinstitute.hellbender.cmdline.programgroups.CoverageAnalysisProgr
 import org.broadinstitute.hellbender.engine.GATKTool;
 import org.broadinstitute.hellbender.engine.ReferenceDataSource;
 import org.broadinstitute.hellbender.engine.filters.ReadFilterLibrary;
+import org.broadinstitute.hellbender.exceptions.GATKException;
 import org.broadinstitute.hellbender.exceptions.UserException;
 import org.broadinstitute.hellbender.tools.spark.utils.HopscotchMap;
 import org.broadinstitute.hellbender.utils.SimpleInterval;
 import org.broadinstitute.hellbender.utils.read.GATKRead;
-import org.broadinstitute.hellbender.utils.variant.GATKVCFConstants;
-import picard.cmdline.programgroups.VariantEvaluationProgramGroup;
 
 import java.util.*;
 
@@ -42,10 +41,48 @@ public class AnalyzeMITESeq extends GATKTool {
     private List<Exon> exonList;
     private final HopscotchMap<SNVCollectionCount, Integer, SNVCollectionCount> variationCounts = new HopscotchMap<>(10000000);
 
+    private int nReadsTotal = 0;
+    private int nReadsUnmapped = 0;
+    private int nReadsLowQuality = 0;
+    private int nReadsWithLowQualityVariation = 0;
+    private int[] refCoverage;
+    private int[][] codonCounts;
+
+    private static final int LOWERCASE_MASK = 0xDF;
+    private static final int FRAME_SHIFTING_INDEL_INDEX = 64;
+    private static final int FRAME_PRESERVING_INDEL_INDEX = 65;
+    private static final int CODON_COUNT_ROW_SIZE = 66;
+
     @Override
     public boolean requiresReads() { return true; }
+
     @Override
     public boolean requiresReference() { return true; }
+
+    @Override
+    public void onTraversalStart() {
+        super.onTraversalStart();
+        initializeRefSeq();
+        initializeExons();
+    }
+
+    @Override
+    public void traverse() {
+        getTransformedReadStream(ReadFilterLibrary.ALLOW_ALL_READS).forEach(this::processRead);
+    }
+
+    @Override
+    public Object onTraversalSuccess() {
+        List<SNVCollectionCount> variationEntries = new ArrayList<>(variationCounts.size());
+        variationEntries.addAll(variationCounts);
+        variationEntries.sort((a,b) -> {
+            int result = Integer.compare(b.getCount(), a.getCount()); // descending order of count
+            if ( result == 0 ) result = a.compareTo(b);
+            return result;
+        });
+        variationEntries.forEach(System.out::println);
+        return null;
+    }
 
     // describes an exon as a pair of offsets (0-based, half-open) on the reference sequence.
     private final static class Exon {
@@ -103,11 +140,11 @@ public class AnalyzeMITESeq extends GATKTool {
 
         @Override
         public String toString() {
-            return refIndex + ":" + (char)refCall + ">" + (char)variantCall;
+            return (refIndex+1) + ":" + (char)refCall + ">" + (char)variantCall;
         }
     }
 
-    public static final class SNVCollectionCount
+    private static final class SNVCollectionCount
             implements Map.Entry<SNVCollectionCount, Integer>, Comparable<SNVCollectionCount> {
         private static SNV[] emptyArray = new SNV[0];
         private final SNV[] snvs;
@@ -177,21 +214,92 @@ public class AnalyzeMITESeq extends GATKTool {
         }
     }
 
-    @Override
-    public void traverse() {
-        initializeRefSeq();
-        initializeExons();
+    private static final class CodonTracker {
+        private final Iterator<Exon> exonIterator;
+        private Exon currentExon;
+        private final int firstCodonIndex;
+        private int codonPhase;
+        private int codonValue;
+        private int indelCount;
+        private final List<Integer> codonValues;
+        private int indelIndex;
 
-        getTransformedReadStream(ReadFilterLibrary.ALLOW_ALL_READS).forEach(this::processRead);
+        private static final int NO_INDEL_INDEX = -1;
 
-        List<SNVCollectionCount> variationEntries = new ArrayList<>(variationCounts.size());
-        variationEntries.addAll(variationCounts);
-        variationEntries.sort((a,b) -> {
-            int result = Integer.compare(b.getCount(), a.getCount()); // descending order of count
-            if ( result == 0 ) result = a.compareTo(b);
-            return result;
-        });
-        variationEntries.forEach(System.out::println);
+        public CodonTracker( final List<Exon> exonList, final int refIndex ) {
+            exonIterator = exonList.iterator();
+            currentExon = exonIterator.next();
+            int codonIndex = 0;
+            while ( refIndex >= currentExon.getEnd() ) {
+                codonIndex += currentExon.size();
+                currentExon = exonIterator.next(); // there's a sentinel to keep us from going off the end
+            }
+            if ( refIndex > currentExon.getStart() ) {
+                codonIndex += refIndex - currentExon.getStart();
+            }
+            codonPhase = codonIndex % 3;
+            codonIndex /= 3;
+            if ( codonPhase == 0 ) {
+                firstCodonIndex = codonIndex;
+            } else {
+                firstCodonIndex = codonIndex + 1;
+                codonPhase -= 3;
+            }
+            codonValue = 0;
+            indelCount = 0;
+            codonValues = new ArrayList<>();
+            indelIndex = NO_INDEL_INDEX;
+        }
+
+        public void push( final int refIndex, final byte call ) {
+            if ( refIndex == currentExon.getEnd() ) {
+                currentExon = exonIterator.next();
+            }
+            if ( refIndex < currentExon.getStart() ) {
+                return;
+            }
+
+            int callCode;
+            switch ( call ) {
+                case 'A': callCode = 0; break;
+                case 'C': callCode = 1; break;
+                case 'G': callCode = 2; break;
+                case 'T': callCode = 3; break;
+                case '+': indelCount += 1; return;
+                case '-': indelCount -= 1; return;
+                default: throw new GATKException("high quality call with value " + (char)call);
+            }
+
+            if ( indelCount != 0 ) {
+                indelIndex = firstCodonIndex + codonValues.size();
+                codonValues.clear(); // no other variant calling on indel-containing reads
+
+                // kill any further calling
+                while ( exonIterator.hasNext() ) {
+                    currentExon = exonIterator.next();
+                }
+            }
+
+            codonValue = (codonValue << 2) | callCode;
+
+            if ( ++codonPhase == 3 ) {
+                codonValues.add( codonValue & 0x3F );
+                codonPhase = 0;
+            }
+        }
+
+        public void report( final int[][] codonCounts ) {
+            if ( indelIndex != NO_INDEL_INDEX ) {
+                final int[] counts = codonCounts[indelIndex];
+                final int idx = (indelCount % 3) != 0 ? FRAME_SHIFTING_INDEL_INDEX : FRAME_PRESERVING_INDEL_INDEX;
+                counts[idx] += 1;
+            } else {
+                int idx = firstCodonIndex;
+                for ( final int codonValue : codonValues ) {
+                    codonCounts[idx++][codonValue] += 1;
+                }
+            }
+        }
     }
 
     private void initializeRefSeq() {
@@ -206,13 +314,14 @@ public class AnalyzeMITESeq extends GATKTool {
         final SimpleInterval wholeTig = new SimpleInterval(tig0.getSequenceName(), 1, refSeqLen);
         refSeq = Arrays.copyOf(reference.queryAndPrefetch(wholeTig).getBases(),refSeqLen);
         for ( int idx = 0; idx < refSeqLen; ++idx ) {
-            switch ( refSeq[idx] & 0xDF ) { // make into lower case
+            switch ( refSeq[idx] &= LOWERCASE_MASK ) { // make into lower case
                 case 'A': case 'C': case 'G': case 'T':
                     break;
                 default:
                     throw new UserException("Reference sequence contains something other than A, C, G, and T.");
             }
         }
+        refCoverage = new int[refSeq.length];
     }
 
     private void initializeExons() {
@@ -250,13 +359,23 @@ public class AnalyzeMITESeq extends GATKTool {
             throw new UserException("ORF length must be divisible by 3.");
         }
 
+        codonCounts = new int[orfLen / 3][];
+        for ( int idx = 0; idx != codonCounts.length; ++idx ) {
+            codonCounts[idx] = new int[CODON_COUNT_ROW_SIZE];
+        }
+
         // it's helpful to have this 0-length sentinel at the end of the list
         exonList.add(new Exon(Integer.MAX_VALUE, Integer.MAX_VALUE));
     }
 
     private void processRead( final GATKRead read ) {
         // ignore unaligned reads and non-primary alignments
-        if ( read.isUnmapped() || read.isSecondaryAlignment() || read.isSupplementaryAlignment() ) return;
+        if ( read.isSecondaryAlignment() || read.isSupplementaryAlignment() ) return;
+        nReadsTotal += 1;
+        if ( read.isUnmapped() ) {
+            nReadsUnmapped += 1;
+            return;
+        }
 
         final byte[] quals = read.getBaseQualitiesNoCopy();
 
@@ -271,7 +390,10 @@ public class AnalyzeMITESeq extends GATKTool {
             }
             start += 1;
         }
-        if ( start == quals.length ) return;
+        if ( start == quals.length ) {
+            nReadsLowQuality += 1;
+            return;
+        }
         start -= minLength - 1;
 
         // find final end-trim
@@ -291,62 +413,89 @@ public class AnalyzeMITESeq extends GATKTool {
     }
 
     private void analyze( final GATKRead read, final int start, final int end ) {
-        List<SNV> variations = new ArrayList<>();
-        final byte[] readSeq = read.getBasesNoCopy();
-        final byte[] readQuals = read.getBaseQualitiesNoCopy();
-        int readIndex = 0;
-        int refIndex = read.getStart() - 1; // 0-based numbering
         final Cigar cigar = read.getCigar();
 
-        // end-clipped reads are no good unless they go "off the end" of the amplicon
+        // reads with a soft end-clip are no good unless the clip is "off the end" of the amplicon
         if ( cigar.getLastCigarElement().getOperator() == CigarOperator.S ) {
             if ( read.getEnd() != refSeq.length - 1 ) {
+                nReadsWithLowQualityVariation += 1;
                 return;
             }
         }
+        // reads with a soft start-clip are no good unless the clip is before the beginning of the amplicon
+        if ( cigar.getFirstCigarElement().getOperator() == CigarOperator.S ) {
+            if ( read.getStart() > 1 ) {
+                nReadsWithLowQualityVariation += 1;
+                return;
+            }
+        }
+
         final Iterator<CigarElement> cigarIterator = cigar.getCigarElements().iterator();
         CigarElement cigarElement = cigarIterator.next();
         CigarOperator cigarOperator = cigarElement.getOperator();
-
-        // beginning-clipped reads are no good unless they start at the beginning of the amplicon
-        if ( cigarOperator == CigarOperator.S ) {
-            if ( refIndex > 0 ) {
-                return;
-            }
-        }
-
         int cigarElementCount = cigarElement.getLength();
+
+        final byte[] readSeq = read.getBasesNoCopy();
+        final byte[] readQuals = read.getBaseQualitiesNoCopy();
+
+        final List<SNV> variations = new ArrayList<>();
+
+        int refIndex = read.getStart() - 1; // 0-based numbering
+        int readIndex = 0;
+
+        CodonTracker codonTracker = null;
         while ( true ) {
             if ( readIndex >= start ) {
+                if ( codonTracker == null ) {
+                    codonTracker = new CodonTracker(exonList, refIndex);
+                }
                 if ( cigarOperator == CigarOperator.D ) {
-                    variations.add(new SNV(refIndex, refSeq[refIndex], (byte)'X'));
+                    variations.add(new SNV(refIndex, refSeq[refIndex], (byte)'-'));
+                    codonTracker.push(refIndex, (byte)'-');
                 } else if ( cigarOperator == CigarOperator.I ) {
                     // low-quality variations spoil the read
                     if ( readQuals[readIndex] < minQ ) {
+                        nReadsWithLowQualityVariation += 1;
                         return;
                     }
-                    variations.add(new SNV(refIndex, (byte)'X', readSeq[readIndex]));
-                } else if ( cigarOperator == CigarOperator.M &&
-                            (readSeq[readIndex] & 7) != (refSeq[refIndex] & 7) ) {
-                    // low-quality variations spoil the read
-                    if ( readQuals[readIndex] < minQ ) {
-                        return;
+                    variations.add(new SNV(refIndex, (byte)'-', readSeq[readIndex]));
+                    codonTracker.push(refIndex, (byte)'+');
+                } else if ( cigarOperator == CigarOperator.M ) {
+                    byte call = (byte) (readSeq[readIndex] & LOWERCASE_MASK);
+                    if (call != refSeq[refIndex]) {
+                        // low-quality variations spoil the read
+                        if (readQuals[readIndex] < minQ) {
+                            nReadsWithLowQualityVariation += 1;
+                            return;
+                        }
+                        variations.add(new SNV(refIndex, refSeq[refIndex], readSeq[readIndex]));
                     }
-                    variations.add(new SNV(refIndex, refSeq[refIndex], readSeq[readIndex]));
+                    codonTracker.push(refIndex, call);
+                    refCoverage[refIndex] += 1;
+                } else if ( cigarOperator != CigarOperator.S ) {
+                    throw new GATKException("unanticipated cigar operator");
                 }
             }
+
             if ( cigarOperator.consumesReadBases() ) {
                 if ( ++readIndex == end ) {
                     break;
                 }
             }
-            if ( cigarOperator.consumesReferenceBases() ) refIndex += 1;
+
+            if ( cigarOperator.consumesReferenceBases() ) {
+                refIndex += 1;
+            }
+
             if ( --cigarElementCount == 0 ) {
                 cigarElement = cigarIterator.next();
                 cigarOperator = cigarElement.getOperator();
                 cigarElementCount = cigarElement.getLength();
             }
         }
+
+        codonTracker.report( codonCounts );
+
         if ( !variations.isEmpty() &&
                 refIndex - variations.get(variations.size()-1).getRefIndex() >= flankingLength &&
                 variations.get(0).getRefIndex() - (read.getStart() - 1) >= flankingLength ) {
