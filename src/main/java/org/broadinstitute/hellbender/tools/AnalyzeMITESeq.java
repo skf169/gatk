@@ -13,8 +13,12 @@ import org.broadinstitute.hellbender.exceptions.GATKException;
 import org.broadinstitute.hellbender.exceptions.UserException;
 import org.broadinstitute.hellbender.tools.spark.utils.HopscotchMap;
 import org.broadinstitute.hellbender.utils.SimpleInterval;
+import org.broadinstitute.hellbender.utils.gcs.BucketUtils;
 import org.broadinstitute.hellbender.utils.read.GATKRead;
 
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.*;
 
 @DocumentedFeature
@@ -37,8 +41,17 @@ public class AnalyzeMITESeq extends GATKTool {
     @Argument(doc = "reference indices of the ORF (1-based, closed), for example, '134-180,214-238'", fullName = "orf")
     private static String orfCoords;
 
+    @Argument(doc = "minimum number of observations of reported variants", fullName = "min-variant-obs")
+    private static int minVariantObservations = 8;
+
+    @Argument(doc = "codon translation (a string of 64 amino acid codes", fullName = "codon-translation")
+    private static String codonTranslation = "KNKNTTTTRSRSIIMIQHQHPPPPRRRRLLLLEDEDAAAAGGGGVVVVZYZYSSSSZCWCLFLF";
+
+    @Argument(doc = "output file prefix", fullName = "output-file-prefix", shortName = "O")
+    private static String outputFilePrefix;
+
     private byte[] refSeq;
-    private List<Exon> exonList;
+    private List<Interval> exonList;
     private final HopscotchMap<SNVCollectionCount, Integer, SNVCollectionCount> variationCounts = new HopscotchMap<>(10000000);
 
     private int nReadsTotal = 0;
@@ -73,23 +86,75 @@ public class AnalyzeMITESeq extends GATKTool {
 
     @Override
     public Object onTraversalSuccess() {
-        List<SNVCollectionCount> variationEntries = new ArrayList<>(variationCounts.size());
-        variationEntries.addAll(variationCounts);
+        long outputSize = variationCounts.stream().filter(entry -> entry.getCount() >= minVariantObservations).count();
+        List<SNVCollectionCount> variationEntries = new ArrayList<>((int)outputSize);
+        for ( final SNVCollectionCount entry : variationCounts ) {
+            if ( entry.getCount() > minVariantObservations ) {
+                variationEntries.add(entry);
+            }
+        }
         variationEntries.sort((a,b) -> {
             int result = Integer.compare(b.getCount(), a.getCount()); // descending order of count
             if ( result == 0 ) result = a.compareTo(b);
             return result;
         });
-        variationEntries.forEach(System.out::println);
+        final String variantsFile = outputFilePrefix + ".variantCounts";
+        try ( final OutputStreamWriter writer =
+                      new OutputStreamWriter(new BufferedOutputStream(BucketUtils.createFile(variantsFile))) ) {
+            for ( final SNVCollectionCount entry : variationEntries ) {
+                writer.write(entry.toString());
+                writer.write('\n');
+            }
+        } catch ( final IOException ioe ) {
+            throw new UserException("Can't write "+variantsFile, ioe);
+        }
+
+        final String codonsFile = outputFilePrefix + ".codonCounts";
+        try ( final OutputStreamWriter writer =
+                      new OutputStreamWriter(new BufferedOutputStream(BucketUtils.createFile(codonsFile))) ) {
+            final int nCodons = codonCounts.length;
+            for ( int idx = 0; idx != nCodons; ++idx ) {
+                final int[] rowCounts = codonCounts[idx];
+                writer.write(Integer.toString(idx));
+                for ( final int count : rowCounts ) {
+                    writer.write('\t');
+                    writer.write(Integer.toString(count));
+                }
+                writer.write('\n');
+            }
+        } catch ( final IOException ioe ) {
+            throw new UserException("Can't write "+codonsFile, ioe);
+        }
+
+        final String aaFile = outputFilePrefix + ".aaCounts";
+        try ( final OutputStreamWriter writer =
+                      new OutputStreamWriter(new BufferedOutputStream(BucketUtils.createFile(codonsFile))) ) {
+            final int nCodons = codonCounts.length;
+            for ( int idx = 0; idx != nCodons; ++idx ) {
+                final int[] rowCounts = codonCounts[idx];
+                final SortedMap<Character,Integer> aaCounts = new TreeMap<>();
+                for ( int codonValue = 0; codonValue != 64; ++codonValue ) {
+                    aaCounts.merge(codonTranslation.charAt(codonValue), rowCounts[codonValue], Integer::sum);
+                }
+                writer.write(Integer.toString(idx));
+                for ( final Map.Entry<Character,Integer> entry : aaCounts.entrySet() ) {
+                    writer.write('\t');
+                    writer.write(entry.getValue().toString());
+                }
+                writer.write('\n');
+            }
+        } catch ( final IOException ioe ) {
+            throw new UserException("Can't write "+aaFile, ioe);
+        }
         return null;
     }
 
-    // describes an exon as a pair of offsets (0-based, half-open) on the reference sequence.
-    private final static class Exon {
+    // describes an interval as a pair of offsets (0-based, half-open) on the reference sequence.
+    private final static class Interval {
         private final int start;
         private final int end;
 
-        public Exon( final int begin, final int end ) {
+        public Interval( final int begin, final int end ) {
             this.start = begin;
             this.end = end;
         }
@@ -215,8 +280,8 @@ public class AnalyzeMITESeq extends GATKTool {
     }
 
     private static final class CodonTracker {
-        private final Iterator<Exon> exonIterator;
-        private Exon currentExon;
+        private final Iterator<Interval> exonIterator;
+        private Interval currentExon;
         private final int firstCodonIndex;
         private int codonPhase;
         private int codonValue;
@@ -226,7 +291,7 @@ public class AnalyzeMITESeq extends GATKTool {
 
         private static final int NO_INDEL_INDEX = -1;
 
-        public CodonTracker( final List<Exon> exonList, final int refIndex ) {
+        public CodonTracker( final List<Interval> exonList, final int refIndex ) {
             exonIterator = exonList.iterator();
             currentExon = exonIterator.next();
             int codonIndex = 0;
@@ -341,7 +406,7 @@ public class AnalyzeMITESeq extends GATKTool {
                     throw new UserException("Found ORF end coordinate less than begin: " + orfCoords);
                 }
                 // convert 1-based, inclusive intervals to 0-based, half-open
-                final Exon exon = new Exon(begin-1, end);
+                final Interval exon = new Interval(begin-1, end);
                 exonList.add(exon);
             }
             catch ( final NumberFormatException nfe ) {
@@ -354,7 +419,7 @@ public class AnalyzeMITESeq extends GATKTool {
             }
         }
 
-        final int orfLen = exonList.stream().mapToInt(Exon::size).sum();
+        final int orfLen = exonList.stream().mapToInt(Interval::size).sum();
         if ( (orfLen % 3) != 0 ) {
             throw new UserException("ORF length must be divisible by 3.");
         }
@@ -365,7 +430,7 @@ public class AnalyzeMITESeq extends GATKTool {
         }
 
         // it's helpful to have this 0-length sentinel at the end of the list
-        exonList.add(new Exon(Integer.MAX_VALUE, Integer.MAX_VALUE));
+        exonList.add(new Interval(Integer.MAX_VALUE, Integer.MAX_VALUE));
     }
 
     private void processRead( final GATKRead read ) {
@@ -444,6 +509,9 @@ public class AnalyzeMITESeq extends GATKTool {
         int readIndex = 0;
 
         CodonTracker codonTracker = null;
+        final List<Interval> refCoverageList = new ArrayList<>();
+        Interval currentRefCoverageInterval = null;
+
         while ( true ) {
             if ( readIndex >= start ) {
                 if ( codonTracker == null ) {
@@ -470,8 +538,15 @@ public class AnalyzeMITESeq extends GATKTool {
                         }
                         variations.add(new SNV(refIndex, refSeq[refIndex], readSeq[readIndex]));
                     }
+                    if ( currentRefCoverageInterval == null ) {
+                        currentRefCoverageInterval = new Interval(refIndex, refIndex + 1);
+                    } else if ( currentRefCoverageInterval.getEnd() == refIndex ) {
+                        currentRefCoverageInterval = new Interval(currentRefCoverageInterval.getStart(), refIndex + 1);
+                    } else {
+                        refCoverageList.add(currentRefCoverageInterval);
+                        currentRefCoverageInterval = new Interval(refIndex, refIndex + 1);
+                    }
                     codonTracker.push(refIndex, call);
-                    refCoverage[refIndex] += 1;
                 } else if ( cigarOperator != CigarOperator.S ) {
                     throw new GATKException("unanticipated cigar operator");
                 }
@@ -491,6 +566,17 @@ public class AnalyzeMITESeq extends GATKTool {
                 cigarElement = cigarIterator.next();
                 cigarOperator = cigarElement.getOperator();
                 cigarElementCount = cigarElement.getLength();
+            }
+        }
+
+        if ( currentRefCoverageInterval != null ) {
+            refCoverageList.add(currentRefCoverageInterval);
+        }
+
+        for ( final Interval refInterval : refCoverageList ) {
+            final int refIntervalEnd = refInterval.getEnd();
+            for ( int idx = refInterval.getStart(); idx != refIntervalEnd; ++idx ) {
+                refCoverage[idx] += 1;
             }
         }
 
