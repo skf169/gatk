@@ -789,6 +789,8 @@ public class GencodeFuncotationFactory extends DataSourceFuncotationFactory {
 
         gencodeFuncotationBuilder.setVariantClassification(GencodeFuncotation.VariantClassification.COULD_NOT_DETERMINE);
 
+        gencodeFuncotationBuilder.setDataSourceName(DEFAULT_NAME);
+
         return gencodeFuncotationBuilder.build();
     }
 
