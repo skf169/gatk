@@ -340,7 +340,7 @@ if ${ISCALLEDBYUSER} ; then
 
   error "Retrieving baseline hg19->hg38 chain file..."
   hg19LiftoverFile=$( makeTemp )
-  curl "${HG19_HG38_CHAIN_FILE_URL}" | gunzip > ${hg19LiftoverFile}
+  curl "${HG19_HG38_CHAIN_FILE_URL}" 2>/dev/null | gunzip > ${hg19LiftoverFile}
 
 	error "Modifying contig names and creating chain file..."
   # Do the appropriate change here:
