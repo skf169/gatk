@@ -740,7 +740,7 @@ public class GencodeFuncotationFactory extends DataSourceFuncotationFactory {
                  );
                 logger.warn("Creating default GencodeFuncotation on transcript " + transcript.getTranscriptId() + " for problem variant: " +
                                 variant.getContig() + ":" + variant.getStart() + "-" + variant.getEnd() + "(" + variant.getReference() + " -> " + altAllele + ")");
-                outputFuncotations.add( createDefaultFuncotationsOnProblemVariant( variant, altAllele, gtfFeature, reference, transcript, version ) );
+                outputFuncotations.add( createDefaultFuncotationsOnProblemVariant( variant, altAllele, gtfFeature, reference, transcript, version, getName() ) );
             }
         }
         return outputFuncotations;
@@ -762,6 +762,7 @@ public class GencodeFuncotationFactory extends DataSourceFuncotationFactory {
      * @param reference The {@link ReferenceContext} for the given {@code variant}.
      * @param transcript The {@link GencodeGtfTranscriptFeature} which is being used to annotate the given {@code variant}.
      * @param version A {@link String} representing the version of the {@link GencodeFuncotationFactory} being used to annotate the given {@code variant}.
+     * @param dataSourceName A {@link String} containing the name of the data source instance.
      * @return A placeholder {@link GencodeFuncotation} for the given {@code variant}.
      */
     @VisibleForTesting
@@ -770,7 +771,8 @@ public class GencodeFuncotationFactory extends DataSourceFuncotationFactory {
                                                                                final GencodeGtfGeneFeature gtfFeature,
                                                                                final ReferenceContext reference,
                                                                                final GencodeGtfTranscriptFeature transcript,
-                                                                               final String version) {
+                                                                               final String version,
+                                                                               final String dataSourceName) {
         // Create basic annotation information:
         final GencodeFuncotationBuilder gencodeFuncotationBuilder = createGencodeFuncotationBuilderWithTrivialFieldsPopulated(variant, altAllele, gtfFeature, transcript);
 
@@ -789,7 +791,7 @@ public class GencodeFuncotationFactory extends DataSourceFuncotationFactory {
 
         gencodeFuncotationBuilder.setVariantClassification(GencodeFuncotation.VariantClassification.COULD_NOT_DETERMINE);
 
-        gencodeFuncotationBuilder.setDataSourceName(DEFAULT_NAME);
+        gencodeFuncotationBuilder.setDataSourceName(dataSourceName);
 
         return gencodeFuncotationBuilder.build();
     }
