@@ -11,6 +11,6 @@
   "LiftoverVcf.write_original_position": "true",
   "LiftoverVcf.warn_on_missing_contig": "true",
 
-  "LiftoverVcf.disk_space_gb": "1024",
-  "LiftoverVcf.boot_disk_size_gb": "128"
+  "LiftoverVcf.disk_space_gb": "4096",
+  "LiftoverVcf.boot_disk_size_gb": "2048"
 }

@@ -66,9 +66,9 @@ workflow LiftoverVcf {
     }
 
     output {
-        String lifted_over_vcf_file         = LiftoverVcfTask.lifted_over_vcf
-        String lifted_over_vcf_file_index   = LiftoverVcfTask.lifted_over_vcf_index
-        String lifted_over_vcf_rejects_file = LiftoverVcfTask.lifted_over_rejects_vcf
+        File lifted_over_vcf_file         = LiftoverVcfTask.lifted_over_vcf
+        File lifted_over_vcf_file_index   = LiftoverVcfTask.lifted_over_vcf_index
+        File lifted_over_vcf_rejects_file = LiftoverVcfTask.lifted_over_rejects_vcf
     }
 }
 
@@ -146,8 +146,8 @@ task LiftoverVcfTask {
      # ------------------------------------------------
      # Outputs:
      output {
-         String lifted_over_vcf         = "${lifted_over_vcf_name}"
-         String lifted_over_vcf_index   = "${lifted_over_vcf_name}.idx"
-         String lifted_over_rejects_vcf = "${lifted_over_rejects_vcf_name}"
+         File lifted_over_vcf         = "${lifted_over_vcf_name}"
+         File lifted_over_vcf_index   = "${lifted_over_vcf_name}.idx"
+         File lifted_over_rejects_vcf = "${lifted_over_rejects_vcf_name}"
      }
  }
