@@ -693,7 +693,11 @@ final public class DataSourceUtils {
         assertConfigPropertiesContainsKey(CONFIG_FILE_FIELD_NAME_ORIGIN_LOCATION, configFileProperties, configFilePath);
         assertConfigPropertiesContainsKey(CONFIG_FILE_FIELD_NAME_PREPROCESSING_SCRIPT, configFileProperties, configFilePath);
         assertConfigPropertiesContainsKey(CONFIG_FILE_FIELD_NAME_TYPE, configFileProperties, configFilePath);
-        assertConfigPropertiesContainsKey(CONFIG_FILE_FIELD_NAME_IS_B37_DATA_SOURCE, configFileProperties, configFilePath);
+
+        //Purposely disabled until new data sources go in.
+        // (https://github.com/broadinstitute/gatk/issues/5428)
+        // (https://github.com/broadinstitute/gatk/issues/5429)
+        //assertConfigPropertiesContainsKey(CONFIG_FILE_FIELD_NAME_IS_B37_DATA_SOURCE, configFileProperties, configFilePath);
 
         // Validate our source file:
         assertPathFilePropertiesField(configFileProperties, CONFIG_FILE_FIELD_NAME_SRC_FILE, configFilePath);
