@@ -19,6 +19,7 @@ import org.broadinstitute.hellbender.utils.read.GATKRead;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.text.DecimalFormat;
 import java.util.*;
 
 @DocumentedFeature
@@ -62,8 +63,9 @@ public class AnalyzeMITESeq extends GATKTool {
     private int[][] codonCounts;
 
     private static final int LOWERCASE_MASK = 0xDF;
-    private static final int FRAME_SHIFTING_INDEL_INDEX = 64;
-    private static final int FRAME_PRESERVING_INDEL_INDEX = 65;
+    private static final int N_REGULAR_CODONS = 64;
+    private static final int FRAME_PRESERVING_INDEL_INDEX = 64;
+    private static final int FRAME_SHIFTING_INDEL_INDEX = 65;
     private static final int CODON_COUNT_ROW_SIZE = 66;
 
     @Override
@@ -77,6 +79,9 @@ public class AnalyzeMITESeq extends GATKTool {
         super.onTraversalStart();
         initializeRefSeq();
         initializeExons();
+        if ( codonTranslation.length() != N_REGULAR_CODONS ) {
+            throw new UserException("codon-translation string must contain exactly 64 characters");
+        }
     }
 
     @Override
@@ -113,12 +118,17 @@ public class AnalyzeMITESeq extends GATKTool {
         try ( final OutputStreamWriter writer =
                       new OutputStreamWriter(new BufferedOutputStream(BucketUtils.createFile(codonsFile))) ) {
             final int nCodons = codonCounts.length;
+            writer.write("AAA\tAAC\tAAG\tAAT\tACA\tACC\tACG\tACT\tAGA\tAGC\tAGG\tAGT\tATA\tATC\tATG\tATT\t"+
+                    "CAA\tCAC\tCAG\tCAT\tCCA\tCCC\tCCG\tCCT\tCGA\tCGC\tCGG\tCGT\tCTA\tCTC\tCTG\tCTT\t"+
+                    "GAA\tGAC\tGAG\tGAT\tGCA\tGCC\tGCG\tGCT\tGGA\tGGC\tGGG\tGGT\tGTA\tGTC\tGTG\tGTT\t"+
+                    "TAA\tTAC\tTAG\tTAT\tTCA\tTCC\tTCG\tTCT\tTGA\tTGC\tTGG\tTGT\tTTA\tTTC\tTTG\tTTT\n");
             for ( int idx = 0; idx != nCodons; ++idx ) {
                 final int[] rowCounts = codonCounts[idx];
-                writer.write(Integer.toString(idx));
-                for ( final int count : rowCounts ) {
-                    writer.write('\t');
-                    writer.write(Integer.toString(count));
+                String prefix = "";
+                for ( int codonId = 0; codonId != N_REGULAR_CODONS; ++codonId ) {
+                    writer.write(prefix);
+                    prefix = "\t";
+                    writer.write(Integer.toString(rowCounts[codonId]));
                 }
                 writer.write('\n');
             }
@@ -126,26 +136,75 @@ public class AnalyzeMITESeq extends GATKTool {
             throw new UserException("Can't write "+codonsFile, ioe);
         }
 
+        final String indelsFile = outputFilePrefix + ".indelCounts";
+        try ( final OutputStreamWriter writer =
+                      new OutputStreamWriter(new BufferedOutputStream(BucketUtils.createFile(indelsFile))) ) {
+            final int nCodons = codonCounts.length;
+            writer.write("NFS\tFS\tTotCvg\n");
+            for ( int idx = 0; idx != nCodons; ++idx ) {
+                final int[] rowCounts = codonCounts[idx];
+                String prefix = "";
+                int coverage = 0;
+                for ( int codonId = 0; codonId != N_REGULAR_CODONS; ++codonId ) {
+                    coverage += rowCounts[codonId];
+                }
+                writer.write(Integer.toString(rowCounts[FRAME_PRESERVING_INDEL_INDEX]));
+                writer.write('\t');
+                writer.write(Integer.toString(rowCounts[FRAME_SHIFTING_INDEL_INDEX]));
+                writer.write('\t');
+                writer.write(Integer.toString(coverage));
+                writer.write('\n');
+            }
+        } catch ( final IOException ioe ) {
+            throw new UserException("Can't write "+indelsFile, ioe);
+        }
+
         final String aaFile = outputFilePrefix + ".aaCounts";
         try ( final OutputStreamWriter writer =
-                      new OutputStreamWriter(new BufferedOutputStream(BucketUtils.createFile(codonsFile))) ) {
+                      new OutputStreamWriter(new BufferedOutputStream(BucketUtils.createFile(aaFile))) ) {
             final int nCodons = codonCounts.length;
             for ( int idx = 0; idx != nCodons; ++idx ) {
                 final int[] rowCounts = codonCounts[idx];
                 final SortedMap<Character,Integer> aaCounts = new TreeMap<>();
-                for ( int codonValue = 0; codonValue != 64; ++codonValue ) {
-                    aaCounts.merge(codonTranslation.charAt(codonValue), rowCounts[codonValue], Integer::sum);
+                for ( int codonId = 0; codonId != N_REGULAR_CODONS; ++codonId ) {
+                    aaCounts.merge(codonTranslation.charAt(codonId), rowCounts[codonId], Integer::sum);
                 }
-                writer.write(Integer.toString(idx));
-                for ( final Map.Entry<Character,Integer> entry : aaCounts.entrySet() ) {
-                    writer.write('\t');
-                    writer.write(entry.getValue().toString());
+                if ( idx == 0 ) {
+                    String prefix = "";
+                    for ( final char chr : aaCounts.keySet() ) {
+                        writer.write(prefix);
+                        prefix = "\t";
+                        writer.write(chr);
+                    }
+                    writer.write('\n');
+                }
+                String prefix = "";
+                for ( final int count : aaCounts.values() ) {
+                    writer.write(prefix);
+                    prefix = "\t";
+                    writer.write(Integer.toString(count));
                 }
                 writer.write('\n');
             }
         } catch ( final IOException ioe ) {
             throw new UserException("Can't write "+aaFile, ioe);
         }
+
+        final String readsFile = outputFilePrefix + ".readCounts";
+        try ( final OutputStreamWriter writer =
+                      new OutputStreamWriter(new BufferedOutputStream(BucketUtils.createFile(readsFile))) ) {
+            final DecimalFormat df = new DecimalFormat("0.000");
+            writer.write("Total Reads:\t" + nReadsTotal + "\n");
+            writer.write("Unmapped Reads:\t" + nReadsUnmapped + "\t" +
+                                df.format(100.*nReadsUnmapped/nReadsTotal) + "%\n");
+            writer.write("LowQ Reads:\t" + nReadsLowQuality + "\t" +
+                                df.format(100.*nReadsLowQuality/nReadsTotal) + "%\n");
+            writer.write("LowQ Var Reads:\t" + nReadsWithLowQualityVariation + "\t" +
+                                df.format(100.*nReadsWithLowQualityVariation/nReadsTotal) + "%\n");
+        } catch ( final IOException ioe ) {
+            throw new UserException("Can't write "+readsFile, ioe);
+        }
+
         return null;
     }
 
