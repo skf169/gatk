@@ -97,7 +97,7 @@ public final class GATKVariantContextUtils {
         VariantContextWriterBuilder vcWriterBuilder =
                 new VariantContextWriterBuilder().clearOptions().setOutputPath(outPath);
 
-        if (VariantContextWriterBuilder.OutputType.UNSPECIFIED == getVariantFileTypeFromExtension(outPath)) {
+        if (VariantContextWriterBuilder.OutputType.UNSPECIFIED == VariantContextWriterBuilder.determineOutputTypeFromFile(outPath)) {
             // the only way the user has to specify an output type is by file extension, and htsjdk
             // throws if it can't map the file extension to a known vcf type, so fallback to a default
             // of VCF
@@ -120,27 +120,6 @@ public final class GATKVariantContextUtils {
         }
 
         return vcWriterBuilder.build();
-    }
-
-    // Determine the variant file type from the file extension. Htsjdk has similar code, when
-    // https://github.com/broadinstitute/gatk/issues/2128 is fixed we should eliminate this code
-    // and use the htsjdk method.
-    private static VariantContextWriterBuilder.OutputType getVariantFileTypeFromExtension(final File outputFile) {
-        return getVariantFileTypeFromExtension(outputFile.toPath());
-    }
-
-    private static VariantContextWriterBuilder.OutputType getVariantFileTypeFromExtension(final Path outputPath) {
-        final String filename = outputPath.getFileName().toString();
-        final String extension = FilenameUtils.getExtension(filename).toLowerCase();
-
-        if (extension.equals(VcfUtils.VCF_FILE_EXTENSION)) {
-            return VariantContextWriterBuilder.OutputType.VCF;
-        } else if (extension.equals(VcfUtils.BCF_FILE_EXTENSION)) {
-            return VariantContextWriterBuilder.OutputType.BCF;
-        } else if (IOUtil.hasBlockCompressedExtension(filename)) {
-            return VariantContextWriterBuilder.OutputType.BLOCK_COMPRESSED_VCF;
-        }
-        return VariantContextWriterBuilder.OutputType.UNSPECIFIED;
     }
 
     /**

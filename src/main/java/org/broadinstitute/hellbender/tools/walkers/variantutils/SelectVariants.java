@@ -524,7 +524,7 @@ public final class SelectVariants extends VariantWalker {
             }
         }
 
-        Path outPath = IOUtils.getPath(outPathName);
+        final Path outPath = IOUtils.getPath(outPathName);
         vcfWriter = createVCFWriter(outPath);
         vcfWriter.writeHeader(new VCFHeader(actualLines, samples));
     }
